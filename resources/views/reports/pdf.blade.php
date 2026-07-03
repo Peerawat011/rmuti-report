@@ -1,3 +1,22 @@
+@php
+    // ฝังฟอนต์เป็น data URI (base64) — วิธีที่ DomPDF โหลดได้ชัวร์ทุกแพลตฟอร์ม
+    // (การอ้าง path ไฟล์ตรงๆ มีปัญหากับ chroot/protocol ของ DomPDF บน Windows)
+    $fontPath = storage_path('fonts');
+    $thsarabunRegular = base64_encode(file_get_contents($fontPath . '/THSarabunNew.ttf'));
+    $thsarabunBold    = base64_encode(file_get_contents($fontPath . '/THSarabunNew Bold.ttf'));
+    // ฝังโลโก้เป็น base64 เช่นกัน (DomPDF บน Windows โหลด path รูปตรงๆ ไม่ได้)
+    $logoBase64 = base64_encode(file_get_contents(public_path('images/logo-rmuti.png')));
+
+    // helper: แปลงรูปใน storage/app/public เป็น data URI (ใช้กับรูปลายเซ็น)
+    $imgDataUri = function ($relPath) {
+        if (!$relPath) return null;
+        $full = storage_path('app/public/' . $relPath);
+        if (!is_file($full)) return null;
+        $ext = strtolower(pathinfo($full, PATHINFO_EXTENSION));
+        $mime = in_array($ext, ['jpg', 'jpeg']) ? 'image/jpeg' : 'image/png';
+        return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($full));
+    };
+@endphp
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,12 +25,15 @@
     <style>
         @font-face {
             font-family: 'thsarabun';
-            src: url("{{ storage_path('fonts/THSarabunNew.ttf') }}") format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            src: url(data:font/truetype;charset=utf-8;base64,{{ $thsarabunRegular }}) format('truetype');
         }
         @font-face {
             font-family: 'thsarabun';
             font-weight: bold;
-            src: url("{{ storage_path('fonts/THSarabunNew Bold.ttf') }}") format('truetype');
+            font-style: normal;
+            src: url(data:font/truetype;charset=utf-8;base64,{{ $thsarabunBold }}) format('truetype');
         }
 
         * {
@@ -20,46 +42,50 @@
 
         body {
             font-size: 14px;
-            line-height: 1.6;
+            line-height: 1.35;
             color: #000;
             margin: 0;
             padding: 0;
         }
 
         .header {
-            text-align: center;
-            margin-bottom: 20px;
+            text-align: left;
+            margin-bottom: 8px;
         }
 
-        .header img {
-            width: 60px;
-            margin-bottom: 6px;
+        .header .logo {
+            width: 42px;
+            height: auto;
+            vertical-align: middle;
         }
 
         .header .university-name {
             font-weight: bold;
-            font-size: 14px;
+            font-size: 15px;
+            vertical-align: middle;
+            margin-left: 8px;
         }
 
         .title-box {
             border: 1px solid #000;
-            padding: 8px 12px;
+            padding: 6px 12px;
             text-align: center;
-            margin: 14px auto;
-            width: 75%;
+            margin: 10px auto;
+            width: 78%;
             font-weight: bold;
             font-size: 15px;
         }
 
         .section-title {
             font-weight: bold;
-            margin-top: 14px;
-            margin-bottom: 6px;
+            margin-top: 8px;
+            margin-bottom: 3px;
             font-size: 14px;
         }
 
         .field {
-            margin-bottom: 6px;
+            margin-bottom: 3px;
+            padding-left: 28px;   /* ย่อหน้าเนื้อหาใต้หัวข้อ */
         }
 
         .field-label {
@@ -80,21 +106,47 @@
             min-height: 18px;
         }
 
+        /* ช่องติ๊กสี่เหลี่ยม (หัวข้อ ๑, ๒) */
         .checkbox {
+            display: inline-block;
+            width: 13px;
+            height: 13px;
+            border: 1px solid #000;
+            position: relative;
+            vertical-align: middle;
+            margin: 0 4px 2px 0;
+        }
+        /* เครื่องหมายถูกวาดด้วย CSS (ฟอนต์ TH Sarabun ไม่มี ✓) */
+        .checkbox-checked::after {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: 0;
+            width: 4px;
+            height: 8px;
+            border: solid #000;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* ตัวเลือกแบบวงเล็บ ( ) — หัวข้อ ๒.๕ */
+        .paren-check {
+            position: relative;
             display: inline-block;
             width: 12px;
             height: 12px;
-            border: 1px solid #000;
-            margin-right: 4px;
-            text-align: center;
-            line-height: 11px;
-            font-size: 12px;
             vertical-align: middle;
         }
-
-        .checkbox-checked::before {
-            content: "✓";
-            font-weight: bold;
+        .paren-check.on::after {
+            content: "";
+            position: absolute;
+            left: 3px;
+            top: -1px;
+            width: 4px;
+            height: 8px;
+            border: solid #000;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
         }
 
         .signature-section {
@@ -103,20 +155,33 @@
         }
 
         .signature-block {
-            margin: 22px 0;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        /* บล็อกลายเซ็นชิดขวา (ตามต้นฉบับ) */
+        .sign-right {
+            width: 58%;
+            margin-left: 42%;
             text-align: center;
         }
 
         .signature-image {
-            max-height: 60px;
-            max-width: 200px;
+            max-height: 55px;
+            max-width: 180px;
         }
 
         .signature-line {
             border-top: 1px dotted #000;
-            width: 280px;
+            width: 260px;
             margin: 0 auto;
             padding-top: 4px;
+        }
+
+        .certify {
+            text-indent: 40px;
+            margin-top: 12px;
+            margin-bottom: 4px;
         }
 
         .text-center { text-align: center; }
@@ -125,8 +190,8 @@
         .mb-2 { margin-bottom: 10px; }
 
         .comment-block {
-            margin: 18px 0;
-            min-height: 60px;
+            margin: 8px 0;
+            min-height: 36px;
         }
 
         .comment-line {
@@ -142,8 +207,8 @@
 {{-- ==================== หน้าที่ 1 ==================== --}}
 
 <div class="header">
-    <img src="{{ public_path('images/logo-rmuti.png') }}" alt="Logo">
-    <div class="university-name">มหาวิทยาลัยเทคโนโลยีราชมงคลอีสาน วิทยาเขตขอนแก่น</div>
+    <img src="data:image/png;base64,{{ $logoBase64 }}" alt="Logo" class="logo">
+    <span class="university-name">มหาวิทยาลัยเทคโนโลยีราชมงคลอีสาน  วิทยาเขตขอนแก่น</span>
 </div>
 
 <div class="title-box">
@@ -153,9 +218,9 @@
 
 {{-- ส่วนที่ 1: ข้อมูลบุคลากร --}}
 <div class="section-title">
-    ๑. ข้อมูลบุคลากรไปราชการ
-    <span class="checkbox {{ $report->activity_type == 'อบรม' ? 'checkbox-checked' : '' }}"></span> อบรม
-    <span class="checkbox {{ $report->activity_type == 'ศึกษาดูงาน' ? 'checkbox-checked' : '' }}"></span> ศึกษาดูงาน
+    ๑. ข้อมูลบุคลากรไปราชการ &emsp;&emsp;
+    <span class="checkbox {{ $report->activity_type == 'อบรม' ? 'checkbox-checked' : '' }}"></span> อบรม &emsp;&emsp;
+    <span class="checkbox {{ $report->activity_type == 'ศึกษาดูงาน' ? 'checkbox-checked' : '' }}"></span> ศึกษาดูงาน &emsp;&emsp;
     <span class="checkbox {{ $report->activity_type == 'ประชุมสัมมนา' ? 'checkbox-checked' : '' }}"></span> ประชุมสัมมนา
 </div>
 
@@ -177,9 +242,9 @@
 
 {{-- ส่วนที่ 2 --}}
 <div class="section-title">
-    ๒. เข้ารับการ
-    <span class="checkbox {{ $report->activity_type == 'อบรม' ? 'checkbox-checked' : '' }}"></span> อบรม
-    <span class="checkbox {{ $report->activity_type == 'ศึกษาดูงาน' ? 'checkbox-checked' : '' }}"></span> ศึกษาดูงาน
+    ๒. เข้ารับการ &emsp;&emsp;
+    <span class="checkbox {{ $report->activity_type == 'อบรม' ? 'checkbox-checked' : '' }}"></span> อบรม &emsp;&emsp;
+    <span class="checkbox {{ $report->activity_type == 'ศึกษาดูงาน' ? 'checkbox-checked' : '' }}"></span> ศึกษาดูงาน &emsp;&emsp;
     <span class="checkbox {{ $report->activity_type == 'ประชุมสัมมนา' ? 'checkbox-checked' : '' }}"></span> ประชุมสัมมนา
 </div>
 
@@ -218,16 +283,16 @@
 </div>
 
 @php $usage = $report->usage_types ?? []; @endphp
-<div class="field" style="margin-left: 20px;">
-    <span class="checkbox {{ in_array('ปฏิบัติงานในหน้าที่รับผิดชอบ', $usage) ? 'checkbox-checked' : '' }}"></span>
+<div class="field" style="padding-left: 52px;">
+    ( <span class="paren-check {{ in_array('ปฏิบัติงานในหน้าที่รับผิดชอบ', $usage) ? 'on' : '' }}"></span> )
     ปฏิบัติงานในหน้าที่รับผิดชอบ
-    &nbsp;&nbsp;
-    <span class="checkbox {{ in_array('ขยายผลแก่บุคลากรในสถานศึกษา', $usage) ? 'checkbox-checked' : '' }}"></span>
+    &emsp;
+    ( <span class="paren-check {{ in_array('ขยายผลแก่บุคลากรในสถานศึกษา', $usage) ? 'on' : '' }}"></span> )
     ขยายผลแก่บุคลากรในสถานศึกษา
 </div>
 
-<div class="field" style="margin-left: 20px;">
-    <span class="checkbox {{ in_array('อื่นๆ', $usage) ? 'checkbox-checked' : '' }}"></span>
+<div class="field" style="padding-left: 52px;">
+    ( <span class="paren-check {{ in_array('อื่นๆ', $usage) ? 'on' : '' }}"></span> )
     อื่นๆ ระบุ
     <span class="field-value">{{ $report->usage_other ?? '' }}</span>
 </div>
@@ -264,34 +329,29 @@
 <div class="signature-section">
 
     <div class="header">
-        <img src="{{ public_path('images/logo-rmuti.png') }}" alt="Logo">
-        <div class="university-name">มหาวิทยาลัยเทคโนโลยีราชมงคลอีสาน วิทยาเขตขอนแก่น</div>
+        <img src="data:image/png;base64,{{ $logoBase64 }}" alt="Logo" class="logo">
+        <span class="university-name">มหาวิทยาลัยเทคโนโลยีราชมงคลอีสาน  วิทยาเขตขอนแก่น</span>
     </div>
 
-    <div class="mt-3" style="text-align: left;">
-        <strong>ขอรับรองว่าข้อมูลที่รายงานข้างต้นเป็นจริงทุกประการ</strong>
-    </div>
+    <div class="certify">ขอรับรองว่าข้อมูลที่รายงานข้างต้นเป็นจริงทุกประการ</div>
 
-    {{-- ลายเซ็นผู้รายงาน --}}
+    {{-- ลายเซ็นผู้รายงาน (ชิดขวาตามต้นฉบับ) --}}
     @php $reporterSig = $report->signatures->where('role', 'reporter')->first(); @endphp
-    <div class="signature-block">
-        @if($reporterSig)
-            <img src="{{ public_path('storage/' . $reporterSig->signature_image) }}" class="signature-image">
+    <div class="sign-right">
+        @if($reporterSig && $imgDataUri($reporterSig->signature_image))
+            <img src="{{ $imgDataUri($reporterSig->signature_image) }}" class="signature-image">
         @else
-            <div style="height: 60px;"></div>
+            <div style="height: 55px;"></div>
         @endif
         <div class="signature-line">
-            ลงชื่อ <strong>{{ $reporterSig->signer_name ?? '..............................................' }}</strong> ผู้รายงาน
+            ลงชื่อ {{ $reporterSig->signer_name ?? '.....................................' }} ผู้รายงาน
         </div>
-        <div>(<strong>{{ $reporterSig->signer_name ?? '..............................................' }}</strong>)</div>
-        <div>ตำแหน่ง <strong>{{ $reporterSig->signer_position ?? '..............................................' }}</strong></div>
+        <div>({{ $reporterSig->signer_name ?? '.....................................' }})</div>
+        <div>ตำแหน่ง {{ $reporterSig->signer_position ?? '.....................................' }}</div>
         <div>
-            วันที่
-            <strong>{{ $reporterSig ? $reporterSig->signed_date->format('d') : '..........' }}</strong>
-            เดือน
-            <strong>{{ $reporterSig ? $reporterSig->signed_date->format('m') : '..........' }}</strong>
-            พ.ศ.
-            <strong>{{ $reporterSig ? ($reporterSig->signed_date->year + 543) : '............' }}</strong>
+            วันที่ {{ $reporterSig ? $reporterSig->signed_date->format('d') : '..........' }}
+            เดือน {{ $reporterSig ? $reporterSig->signed_date->format('m') : '..........' }}
+            พ.ศ. {{ $reporterSig ? ($reporterSig->signed_date->year + 543) : '............' }}
         </div>
     </div>
 
@@ -312,18 +372,18 @@
                 </div>
                 <div class="comment-line">&nbsp;</div>
 
-                {{-- ลายเซ็น --}}
-                <div class="signature-block" style="margin-top: 8px;">
-                    @if($sig)
-                        <img src="{{ public_path('storage/' . $sig->signature_image) }}" class="signature-image">
+                {{-- ลายเซ็น (ชิดขวาตามต้นฉบับ) --}}
+                <div class="sign-right" style="margin-top: 4px;">
+                    @if($sig && $imgDataUri($sig->signature_image))
+                        <img src="{{ $imgDataUri($sig->signature_image) }}" class="signature-image">
                     @else
-                        <div style="height: 50px;"></div>
+                        <div style="height: 45px;"></div>
                     @endif
                     <div class="signature-line">
-                        ลงชื่อ <strong>{{ $sig->signer_name ?? '..............................................' }}</strong>
+                        ลงชื่อ {{ $sig->signer_name ?? '.....................................' }}
                     </div>
-                    <div>(<strong>{{ $sig->signer_name ?? '..............................................' }}</strong>)</div>
-                    <div>ตำแหน่ง <strong>{{ $sig->signer_position ?? '..............................................' }}</strong></div>
+                    <div>({{ $sig->signer_name ?? '.....................................' }})</div>
+                    <div>ตำแหน่ง {{ $sig->signer_position ?? '.....................................' }}</div>
                 </div>
             </div>
         @endif

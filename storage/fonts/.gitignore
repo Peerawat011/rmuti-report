@@ -1,0 +1,4 @@
+# เก็บเฉพาะฟอนต์ต้นฉบับ TH Sarabun (ใช้ฝังใน PDF) — ไม่เก็บ cache ที่ DomPDF สร้าง
+*
+!.gitignore
+!THSarabunNew*.ttf

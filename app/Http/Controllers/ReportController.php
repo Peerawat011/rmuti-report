@@ -181,14 +181,13 @@ class ReportController extends Controller
         $pdf = Pdf::loadView('reports.pdf', compact('report'))
             ->setPaper('a4', 'portrait')
             ->setOptions([
-                'defaultFont' => 'sarabun',
+                'defaultFont' => 'thsarabun',
                 'isHtml5ParserEnabled' => true,
                 'isRemoteEnabled' => true,
             ]);
 
         // ชื่อไฟล์
-        $filename = 'รายงาน_' . str_pad($report->id, 4, '0', STR_PAD_LEFT)
-                . '_' . now()->format('YmdHis') . '.pdf';
+        $filename = 'แบบรายงานการพัฒนาบุคลากรโดยการอบรมศึกษาดูงานประชุมสัมมนา.pdf';
 
         return $pdf->download($filename);
     }
