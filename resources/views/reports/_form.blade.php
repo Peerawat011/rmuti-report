@@ -172,12 +172,12 @@
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-header bg-white border-bottom py-2">
         <strong style="color: #EF6C00;">
-            <i class="bi bi-pen-fill"></i> ๔. รายละเอียดการไปศึกษา ฝึกอบรม ประชุม สัมมนา <span class="text-danger">*</span>
+            <i class="bi bi-pen-fill"></i> ๔. รายละเอียดการไปศึกษา ฝึกอบรม ประชุม สัมมนา
         </strong>
     </div>
     <div class="card-body">
         <small class="text-muted d-block mb-2">บรรยายสิ่งที่ได้สังเกตรู้เห็น หรือได้รับถ่ายทอดมาให้ชัดเจน</small>
-        <textarea name="details" class="form-control" rows="6" required>{{ old('details', $report->details ?? '') }}</textarea>
+        <textarea name="details" class="form-control" rows="6">{{ old('details', $report->details ?? '') }}</textarea>
     </div>
 </div>
 
@@ -185,11 +185,11 @@
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-header bg-white border-bottom py-2">
         <strong style="color: #EF6C00;">
-            <i class="bi bi-lightbulb-fill"></i> ๕. สรุปข้อคิดเห็น/ข้อเสนอแนะ <span class="text-danger">*</span>
+            <i class="bi bi-lightbulb-fill"></i> ๕. สรุปข้อคิดเห็น/ข้อเสนอแนะ
         </strong>
     </div>
     <div class="card-body">
-        <textarea name="suggestions" class="form-control" rows="5" required>{{ old('suggestions', $report->suggestions ?? '') }}</textarea>
+        <textarea name="suggestions" class="form-control" rows="5">{{ old('suggestions', $report->suggestions ?? '') }}</textarea>
     </div>
 </div>
 

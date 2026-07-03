@@ -99,14 +99,14 @@
                             'อื่นๆ',
                         ];
                     @endphp
-                    <select class="form-select" id="department" name="department" required>
-                        <option value="">-- กรุณาเลือก --</option>
+                    <input type="text" class="form-control" id="department" name="department" list="departmentList"
+                           value="{{ old('department', $user->department) }}"
+                           placeholder="เช่น กองบริหารงานบุคคล" required>
+                    <datalist id="departmentList">
                         @foreach($departments as $dept)
-                            <option value="{{ $dept }}" {{ old('department', $user->department) == $dept ? 'selected' : '' }}>
-                                {{ $dept }}
-                            </option>
+                            <option value="{{ $dept }}">
                         @endforeach
-                    </select>
+                    </datalist>
                 </div>
 
                 {{-- สังกัดคณะ --}}
@@ -125,14 +125,14 @@
                             'ไม่สังกัดคณะ',
                         ];
                     @endphp
-                    <select class="form-select" id="faculty" name="faculty" required>
-                        <option value="">-- กรุณาเลือก --</option>
+                    <input type="text" class="form-control" id="faculty" name="faculty" list="facultyList"
+                           value="{{ old('faculty', $user->faculty) }}"
+                           placeholder="เช่น คณะวิศวกรรมศาสตร์" required>
+                    <datalist id="facultyList">
                         @foreach($faculties as $fac)
-                            <option value="{{ $fac }}" {{ old('faculty', $user->faculty) == $fac ? 'selected' : '' }}>
-                                {{ $fac }}
-                            </option>
+                            <option value="{{ $fac }}">
                         @endforeach
-                    </select>
+                    </datalist>
                 </div>
 
                 <div class="d-flex gap-2 justify-content-end mt-4">

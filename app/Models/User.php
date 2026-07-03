@@ -67,12 +67,19 @@ public function isStaff()
     return $this->role === 'staff';
 }
 
+// ตรวจว่าเป็น admin (ผู้ดูแลระบบ)
+public function isAdmin()
+{
+    return $this->role === 'admin';
+}
+
 // label ภาษาไทย
 public function getRoleLabelAttribute()
 {
     return match($this->role) {
         'staff'      => 'บุคลากรทั่วไป',
         'supervisor' => 'ผู้บังคับบัญชา',
+        'admin'      => 'ผู้ดูแลระบบ',
         default      => 'ไม่ระบุ',
     };
 }
@@ -83,6 +90,7 @@ public function getRoleColorAttribute()
     return match($this->role) {
         'staff'      => 'secondary',
         'supervisor' => 'warning',
+        'admin'      => 'danger',
         default      => 'secondary',
     };
 }

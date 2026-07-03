@@ -1,0 +1,33 @@
+@extends('layouts.app')
+
+@section('title', 'เพิ่มประกาศ')
+
+@section('content')
+<div class="container py-4" style="max-width: 760px;">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ route('admin.announcements.index') }}" class="link-gov">จัดการประกาศ</a></li>
+            <li class="breadcrumb-item active">เพิ่มประกาศ</li>
+        </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0" style="color: #EF6C00;"><i class="bi bi-plus-circle-fill"></i> เพิ่มประกาศข่าวสาร</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ route('admin.announcements.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                @include('admin.announcements._form')
+
+                <div class="d-flex gap-2 justify-content-end">
+                    <a href="{{ route('admin.announcements.index') }}" class="btn btn-outline-secondary">ยกเลิก</a>
+                    <button type="submit" class="btn btn-gov"><i class="bi bi-check-lg"></i> บันทึกประกาศ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+@endsection

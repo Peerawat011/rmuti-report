@@ -4,6 +4,8 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AnnouncementController;
 
 
 
@@ -25,9 +27,12 @@ use App\Http\Controllers\ReportController;
 
         // ===== Routes สำหรับคนที่ล็อกอินแล้ว =====
         Route::middleware('auth')->group(function () {
-        Route::get('/dashboard', function () {
-        return view('dashboard');
-        })->name('dashboard');
+        // หน้าแรก = กระดานข่าวประชาสัมพันธ์
+        Route::get('/dashboard', [AnnouncementController::class, 'index'])->name('dashboard');
+
+        // หน้ารายละเอียดประกาศ
+        Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show'])
+            ->name('announcements.show');
 
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -56,6 +61,24 @@ use App\Http\Controllers\ReportController;
 
         // ===== Report Routes  =====
         Route::resource('reports', ReportController::class);
+
+        // ===== Admin Routes =====
+        Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+            // แดชบอร์ดผู้ดูแลระบบ
+            Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+
+            // จัดการผู้ใช้ (CRUD)
+            Route::resource('users', \App\Http\Controllers\Admin\UserController::class)
+                ->except(['show']);
+
+            // จัดการรายงานทั้งหมด (CRUD) — ดูรายละเอียด/PDF ใช้ route reports.show / reports.pdf เดิม
+            Route::resource('reports', \App\Http\Controllers\Admin\ReportController::class)
+                ->except(['show']);
+
+            // จัดการประกาศข่าวสาร (CRUD)
+            Route::resource('announcements', \App\Http\Controllers\Admin\AnnouncementController::class)
+                ->except(['show']);
+        });
 
         // ===== Supervisor Routes (Phase 3B) =====
         Route::middleware(['auth', 'role:supervisor'])->group(function () {

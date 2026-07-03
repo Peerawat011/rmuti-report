@@ -105,6 +105,11 @@ class ReportController extends Controller
     {
         $userId = Auth::id();
 
+        // ผู้ดูแลระบบ → เข้าถึงได้ทุกรายงาน
+        if (Auth::user()->isAdmin()) {
+            return true;
+        }
+
         // เจ้าของรายงาน → ทำได้ทุกอย่าง
         if ($report->user_id === $userId) {
             return true;
@@ -148,8 +153,8 @@ class ReportController extends Controller
             'usage_types'   => 'nullable|array',
             'usage_other'   => 'nullable|string|max:500',
             'documents'     => 'nullable|string',
-            'details'       => 'required|string',
-            'suggestions'   => 'required|string',
+            'details'       => 'nullable|string',
+            'suggestions'   => 'nullable|string',
             // ===== Supervisor (ใหม่) =====
             'supervisor_1_id' => 'required|exists:users,id|different:supervisor_2_id|different:supervisor_3_id',
             'supervisor_2_id' => 'nullable|exists:users,id|different:supervisor_3_id',

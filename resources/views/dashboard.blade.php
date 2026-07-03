@@ -1,8 +1,21 @@
 @extends('layouts.app')
 
-@section('title', 'หน้าหลัก - Dashboard')
+@section('title', 'ข่าวประชาสัมพันธ์และประกาศ')
 
 @section('content')
+<style>
+    /* ปุ่มเลื่อนสไลด์ให้เห็นชัดบนรูปพื้นสว่าง */
+    .ann-carousel .carousel-control-prev-icon,
+    .ann-carousel .carousel-control-next-icon {
+        background-color: rgba(239, 108, 0, 0.75);
+        border-radius: 50%;
+        padding: 10px;
+        background-size: 55%;
+    }
+    .ann-carousel .carousel-indicators [data-bs-target] {
+        background-color: #EF6C00;
+    }
+</style>
 <div class="container py-4">
 
     @if(session('success'))
@@ -12,87 +25,109 @@
         </div>
     @endif
 
-    {{-- Welcome Banner --}}
-    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #EF6C00 0%, #FFB74D 100%); color: white;">
-        <div class="card-body p-4">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h3 class="mb-1">
-                        <i class="bi bi-hand-thumbs-up-fill"></i>
-                        ยินดีต้อนรับ, {{ Auth::user()->first_name }} {{ Auth::user()->last_name }}!
-                    </h3>
-                    <p class="mb-0" style="opacity: 0.9;">เข้าสู่ระบบสำเร็จ — ขอบคุณที่ใช้บริการของเรา</p>
-                </div>
-                <div class="col-md-4 text-end d-none d-md-block">
-                    <i class="bi bi-shield-check" style="font-size: 4rem; opacity: 0.3;"></i>
-                </div>
-            </div>
+    {{-- Header --}}
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h3 class="mb-1" style="color: #EF6C00;">
+                <i class="bi bi-megaphone-fill"></i> ข่าวประชาสัมพันธ์และประกาศ
+            </h3>
+            <p class="text-muted mb-0">ติดตามข่าวสารและประกาศล่าสุดจากหน่วยงาน</p>
         </div>
+        @auth
+            @if(Auth::user()->isAdmin())
+                <a href="{{ route('admin.announcements.index') }}" class="btn btn-gov">
+                    <i class="bi bi-gear-fill"></i> จัดการประกาศ
+                </a>
+            @endif
+        @endauth
     </div>
 
-    {{-- 2 การ์ดข้างกัน --}}
-    <div class="row g-3">
-
-        {{-- การ์ดซ้าย: ข้อมูลบุคลากร --}}
-        <div class="col-md-7">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-bottom" style="color: #EF6C00;">
-                    <h5 class="mb-0"><i class="bi bi-person-badge-fill"></i> ข้อมูลบุคลากร</h5>
+    {{-- Feed การ์ดข่าว --}}
+    @if($announcements->count() > 0)
+        <div class="row g-4">
+            @foreach($announcements as $a)
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        @if($a->images->count() > 1)
+                            {{-- หลายรูป → สไลด์ --}}
+                            <div id="annCard{{ $a->id }}" class="carousel slide ann-carousel" data-bs-ride="carousel" data-bs-interval="4000">
+                                <div class="carousel-indicators">
+                                    @foreach($a->images as $i => $img)
+                                        <button type="button" data-bs-target="#annCard{{ $a->id }}" data-bs-slide-to="{{ $i }}"
+                                                class="{{ $i === 0 ? 'active' : '' }}" aria-label="รูปที่ {{ $i + 1 }}"></button>
+                                    @endforeach
+                                </div>
+                                <div class="carousel-inner" style="border-top-left-radius: .375rem; border-top-right-radius: .375rem;">
+                                    @foreach($a->images as $i => $img)
+                                        <div class="carousel-item {{ $i === 0 ? 'active' : '' }}">
+                                            <a href="{{ route('announcements.show', $a) }}">
+                                                <img src="{{ $img->url }}" alt="{{ $a->title }}"
+                                                     class="d-block w-100" style="height: 190px; object-fit: cover;">
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#annCard{{ $a->id }}" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon"></span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#annCard{{ $a->id }}" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon"></span>
+                                </button>
+                            </div>
+                        @elseif($a->cover_image_url)
+                            <a href="{{ route('announcements.show', $a) }}" class="text-decoration-none">
+                                <img src="{{ $a->cover_image_url }}" alt="{{ $a->title }}"
+                                     style="height: 190px; object-fit: cover; border-top-left-radius: .375rem; border-top-right-radius: .375rem;"
+                                     class="card-img-top">
+                            </a>
+                        @else
+                            <a href="{{ route('announcements.show', $a) }}" class="text-decoration-none">
+                                <div class="d-flex align-items-center justify-content-center"
+                                     style="height: 190px; background: linear-gradient(135deg, #FFB74D 0%, #EF6C00 100%); border-top-left-radius: .375rem; border-top-right-radius: .375rem;">
+                                    <i class="bi bi-megaphone-fill text-white" style="font-size: 3rem; opacity: .8;"></i>
+                                </div>
+                            </a>
+                        @endif
+                        <div class="card-body d-flex flex-column">
+                            <small class="text-muted mb-1">
+                                <i class="bi bi-calendar3"></i>
+                                {{ optional($a->published_at ?? $a->created_at)->format('d/m/Y') }}
+                                @if($a->images_count ?? $a->images->count())
+                                    <span class="ms-2"><i class="bi bi-images"></i> {{ $a->images->count() }} รูป</span>
+                                @endif
+                            </small>
+                            <h5 class="card-title" style="color: #4E342E;">
+                                <a href="{{ route('announcements.show', $a) }}" class="text-decoration-none" style="color: inherit;">
+                                    {{ $a->title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted small flex-grow-1">{{ $a->excerpt }}</p>
+                            <div class="d-flex align-items-center justify-content-between mt-2 flex-wrap gap-2">
+                                <a href="{{ route('announcements.show', $a) }}" class="link-gov">
+                                    อ่านต่อ <i class="bi bi-arrow-right"></i>
+                                </a>
+                                @if($a->link_url)
+                                    <a href="{{ $a->link_url }}" target="_blank" rel="noopener noreferrer"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-box-arrow-up-right"></i> ไปยังเว็บไซต์
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <table class="table table-borderless mb-0">
-                        {{-- <tr>
-                            <td style="width: 180px;"><strong>รหัสบุคลากร:</strong></td>
-                            <td>#{{ str_pad(Auth::user()->id, 5, '0', STR_PAD_LEFT) }}</td>
-                        </tr> --}}
-                        <tr>
-                            <td><strong>ชื่อ-นามสกุล:</strong></td>
-                            <td>{{ Auth::user()->first_name }} {{ Auth::user()->last_name }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>อีเมล:</strong></td>
-                            <td>{{ Auth::user()->email }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>ตำแหน่งงาน:</strong></td>
-                            <td>{{ Auth::user()->position }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>สังกัดสำนัก/กอง:</strong></td>
-                            <td>{{ Auth::user()->department }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>สังกัดคณะ:</strong></td>
-                            <td>{{ Auth::user()->faculty }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>สมัครเมื่อ:</strong></td>
-                            <td>{{ Auth::user()->created_at->format('d/m/Y ') }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
+            @endforeach
         </div>
 
-        {{-- การ์ดขวา: สถานะระบบ --}}
-        <div class="col-md-5">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-bottom" style="color: #1e3a8a;">
-                    <h5 class="mb-0"><i class="bi bi-info-circle-fill"></i> สถานะระบบ</h5>
-                </div>
-                <div class="card-body">
-                    <p><i class="bi bi-check-circle-fill text-success"></i> ระบบล็อกอิน: ใช้งานได้</p>
-                    <p><i class="bi bi-check-circle-fill text-success"></i> ฐานข้อมูล: เชื่อมต่อแล้ว</p>
-                    <p><i class="bi bi-check-circle-fill text-success"></i> Session: ปลอดภัย</p>
-                    <p class="mb-0">
-                        <i class="bi bi-clock-fill text-primary"></i>
-                        เข้าสู่ระบบเมื่อ: {{ now()->format('d/m/Y ') }}
-                    </p>
-                </div>
+        <div class="mt-4">{{ $announcements->links() }}</div>
+    @else
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center text-muted py-5">
+                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                <p class="mt-3 mb-0">ยังไม่มีประกาศข่าวสารในขณะนี้</p>
             </div>
         </div>
-
-    </div>
+    @endif
 
 </div>
 @endsection

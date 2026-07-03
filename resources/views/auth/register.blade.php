@@ -84,39 +84,43 @@
                            required>
                 </div>
 
-                {{-- สังกัดสำนัก/สถาบัน/กอง --}}
+                {{-- สังกัดสำนัก/สถาบัน/กอง (กรอกเอง + มีตัวเลือกแนะนำ) --}}
                 <div class="mb-3">
                     <label for="department" class="form-label">
                         <i class="bi bi-building-fill text-primary"></i> สังกัดสำนัก/สถาบัน/กอง <span class="text-danger">*</span>
                     </label>
-                    <select class="form-select" id="department" name="department" required>
-                        <option value="">-- กรุณาเลือก --</option>
-                        <option value="สำนักงานอธิการบดี" {{ old('department') == 'สำนักงานอธิการบดี' ? 'selected' : '' }}>สำนักงานวิชาการ</option>
-                        <option value="สำนักส่งเสริมวิชาการและงานทะเบียน" {{ old('department') == 'สำนักส่งเสริมวิชาการและงานทะเบียน' ? 'selected' : '' }}>สำนักวิชาการและงานทะเบียน</option>
-                        {{-- <option value="สำนักวิทยบริการและเทคโนโลยีสารสนเทศ" {{ old('department') == 'สำนักวิทยบริการและเทคโนโลยีสารสนเทศ' ? 'selected' : '' }}>สำนักวิทยบริการและเทคโนโลยีสารสนเทศ</option>
-                        <option value="สถาบันวิจัยและพัฒนา" {{ old('department') == 'สถาบันวิจัยและพัฒนา' ? 'selected' : '' }}>สถาบันวิจัยและพัฒนา</option>
-                        <option value="กองคลัง" {{ old('department') == 'กองคลัง' ? 'selected' : '' }}>กองคลัง</option>
-                        <option value="กองบริหารงานบุคคล" {{ old('department') == 'กองบริหารงานบุคคล' ? 'selected' : '' }}>กองบริหารงานบุคคล</option>
-                        <option value="กองพัฒนานักศึกษา" {{ old('department') == 'กองพัฒนานักศึกษา' ? 'selected' : '' }}>กองพัฒนานักศึกษา</option> --}}
-                        <option value="อื่นๆ" {{ old('department') == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ</option>
-                    </select>
+                    <input type="text" class="form-control" id="department" name="department" list="departmentList"
+                           value="{{ old('department') }}"
+                           placeholder="เช่น สำนักส่งเสริมวิชาการและงานทะเบียน" required>
+                    <datalist id="departmentList">
+                        <option value="สำนักงานอธิการบดี">
+                        <option value="สำนักส่งเสริมวิชาการและงานทะเบียน">
+                        <option value="สำนักวิทยบริการและเทคโนโลยีสารสนเทศ">
+                        <option value="สถาบันวิจัยและพัฒนา">
+                        <option value="กองคลัง">
+                        <option value="กองบริหารงานบุคคล">
+                        <option value="กองพัฒนานักศึกษา">
+                        <option value="อื่นๆ">
+                    </datalist>
                 </div>
 
-                {{-- สังกัดคณะ --}}
+                {{-- สังกัดคณะ (กรอกเอง + มีตัวเลือกแนะนำ) --}}
                 <div class="mb-3">
                     <label for="faculty" class="form-label">
                         <i class="bi bi-mortarboard-fill text-primary"></i> สังกัดคณะ <span class="text-danger">*</span>
                     </label>
-                    <select class="form-select" id="faculty" name="faculty" required>
-                        <option value="">-- กรุณาเลือก --</option>
-                        <option value="คณะวิศวกรรมศาสตร์" {{ old('faculty') == 'คณะวิศวกรรมศาสตร์' ? 'selected' : '' }}>คณะวิศวกรรมศาสตร์</option>
-                        <option value="คณะบริหารธุรกิจ" {{ old('faculty') == 'คณะบริหารธุรกิจ' ? 'selected' : '' }}>คณะบริหารธุรกิจ</option>
-                        {{-- <option value="คณะวิทยาศาสตร์และศิลปศาสตร์" {{ old('faculty') == 'คณะวิทยาศาสตร์และศิลปศาสตร์' ? 'selected' : '' }}>คณะวิทยาศาสตร์และศิลปศาสตร์</option>
-                        <option value="คณะครุศาสตร์อุตสาหกรรม" {{ old('faculty') == 'คณะครุศาสตร์อุตสาหกรรม' ? 'selected' : '' }}>คณะครุศาสตร์อุตสาหกรรม</option>
-                        <option value="คณะสถาปัตยกรรมศาสตร์และศิลปกรรมสร้างสรรค์" {{ old('faculty') == 'คณะสถาปัตยกรรมศาสตร์และศิลปกรรมสร้างสรรค์' ? 'selected' : '' }}>คณะสถาปัตยกรรมศาสตร์และศิลปกรรมสร้างสรรค์</option>
-                        <option value="คณะศิลปกรรมและออกแบบอุตสาหกรรม" {{ old('faculty') == 'คณะศิลปกรรมและออกแบบอุตสาหกรรม' ? 'selected' : '' }}>คณะศิลปกรรมและออกแบบอุตสาหกรรม</option>
-                        <option value="ไม่สังกัดคณะ" {{ old('faculty') == 'ไม่สังกัดคณะ' ? 'selected' : '' }}>ไม่สังกัดคณะ</option> --}}
-                    </select>
+                    <input type="text" class="form-control" id="faculty" name="faculty" list="facultyList"
+                           value="{{ old('faculty') }}"
+                           placeholder="เช่น คณะวิศวกรรมศาสตร์" required>
+                    <datalist id="facultyList">
+                        <option value="คณะวิศวกรรมศาสตร์">
+                        <option value="คณะบริหารธุรกิจ">
+                        <option value="คณะวิทยาศาสตร์และศิลปศาสตร์">
+                        <option value="คณะครุศาสตร์อุตสาหกรรม">
+                        <option value="คณะสถาปัตยกรรมศาสตร์และศิลปกรรมสร้างสรรค์">
+                        <option value="คณะศิลปกรรมและออกแบบอุตสาหกรรม">
+                        <option value="ไม่สังกัดคณะ">
+                    </datalist>
                 </div>
                 
                 {{-- ประเภทผู้ใช้งาน --}}

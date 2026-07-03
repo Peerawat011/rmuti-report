@@ -237,6 +237,34 @@
                 </li>
                 <li><hr class="dropdown-divider"></li>
             @endif
+
+            @if(Auth::user()->isAdmin())
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.dashboard') }}">
+                        <i class="bi bi-speedometer2 text-danger"></i>
+                            แดชบอร์ดผู้ดูแลระบบ
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.users.index') }}">
+                        <i class="bi bi-people-fill text-danger"></i>
+                            จัดการผู้ใช้
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.reports.index') }}">
+                        <i class="bi bi-file-earmark-text-fill text-danger"></i>
+                            จัดการรายงานทั้งหมด
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.announcements.index') }}">
+                        <i class="bi bi-megaphone-fill text-danger"></i>
+                            จัดการประกาศข่าวสาร
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+            @endif
             
             
             <li>
