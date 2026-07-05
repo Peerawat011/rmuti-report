@@ -12,6 +12,9 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 # ให้ php-fpm (ไม่ใช่ root) เขียน storage และ cache ได้ — ไม่งั้น Laravel boot ไม่ผ่าน (500 ทุกหน้า)
 RUN chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
 
+# DomPDF เขียน font cache (.ufm) ลงโฟลเดอร์นี้ตอนสร้าง PDF ครั้งแรก — ต้องเขียนได้ ไม่งั้น Export PDF = 500
+RUN chmod -R 777 /var/www/html/vendor/dompdf/dompdf/lib/fonts
+
 # สร้าง symlink public/storage ตั้งแต่ build — รูปอัปโหลดแสดงได้แม้สคริปต์บูตไม่ถูกรัน
 RUN ln -sfn /var/www/html/storage/app/public /var/www/html/public/storage
 
