@@ -12,7 +12,7 @@ class Signature extends Model
     protected $fillable = [
         'report_id', 'role',
         'signer_name', 'signer_position', 'comment',
-        'signature_image', 'signed_date',
+        'signature_image', 'user_signature_id', 'signed_date',
     ];
 
     protected $casts = [
@@ -25,9 +25,15 @@ class Signature extends Model
         return $this->belongsTo(Report::class);
     }
 
-    // ดึง URL ของรูปลายเซ็น
+    // เวอร์ชันลายเซ็นประจำตัวที่ใช้ลงนาม
+    public function userSignature()
+    {
+        return $this->belongsTo(UserSignature::class);
+    }
+
+    // URL รูปลายเซ็น — ผ่าน route ที่ตรวจสิทธิ์ (ไม่ใช่ไฟล์สาธารณะอีกต่อไป)
     public function getSignatureUrlAttribute()
     {
-        return $this->signature_image ? asset('storage/' . $this->signature_image) : null;
+        return route('signatures.image', $this);
     }
 }

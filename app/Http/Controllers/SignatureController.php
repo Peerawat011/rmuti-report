@@ -32,9 +32,9 @@ class SignatureController extends Controller
             abort(403, 'คุณไม่มีสิทธิ์เข้าถึงรายงานนี้');
         }
 
-        // Validate ข้อมูล
+        // Validate ข้อมูล (profile = ใช้ลายเซ็นประจำตัวที่ตั้งไว้)
         $request->validate([
-            'signature_mode' => 'required|in:draw,upload',
+            'signature_mode' => 'required|in:profile,draw,upload',
             'signature_data' => 'required_if:signature_mode,draw|nullable|string',
             'signature_file' => 'required_if:signature_mode,upload|nullable|image|mimes:jpeg,png,jpg|max:2048',
             'signed_date'    => 'required|date',
@@ -49,41 +49,30 @@ class SignatureController extends Controller
 
         $user = Auth::user();
 
-        // ลบลายเซ็นเก่า (ถ้ามี) - สำหรับ flow แก้ไขลายเซ็น
+        // หาลายเซ็นประจำตัวที่จะใช้: ใช้เวอร์ชันล่าสุด หรือสร้างเวอร์ชันใหม่จากที่วาด/อัปโหลด
+        if ($request->signature_mode === 'profile') {
+            $userSignature = $user->activeSignature;
+            if (!$userSignature) {
+                return back()->withErrors(['signature_mode' => 'คุณยังไม่มีลายเซ็นประจำตัว กรุณาวาดหรืออัปโหลดลายเซ็นก่อน']);
+            }
+        } else {
+            $userSignature = UserSignatureController::createVersion($request, $user->id);
+        }
+
+        // ลบลายเซ็นเก่าของรายงานนี้ (ถ้ามี) - สำหรับ flow แก้ไขลายเซ็น
         $existingSignature = $report->signatures()->where('role', 'reporter')->first();
         if ($existingSignature) {
-            if (Storage::disk('public')->exists($existingSignature->signature_image)) {
-                Storage::disk('public')->delete($existingSignature->signature_image);
-            }
-            $existingSignature->delete();
+            $this->deleteSignatureRecord($existingSignature);
         }
 
-        // บันทึกรูปลายเซ็นตาม mode
-        $signaturePath = null;
-
-        if ($request->signature_mode === 'draw') {
-            // Mode 1: วาด - มาเป็น base64 ต้อง decode
-            $signaturePath = $this->saveDrawnSignature(
-                $request->signature_data,
-                $report->id,
-                $user->id
-            );
-        } else {
-            // Mode 2: อัปโหลด
-            $file = $request->file('signature_file');
-            $filename = 'signature_reporter_' . $report->id . '_' . time()
-                      . '.' . $file->getClientOriginalExtension();
-            $signaturePath = $file->storeAs('signatures', $filename, 'public');
-        }
-
-        // บันทึกลง database
+        // บันทึกลง database — อ้างอิงเวอร์ชันลายเซ็นประจำตัว (ไม่ก็อปไฟล์ต่อรายงาน)
         Signature::create([
-            'report_id'       => $report->id,
-            'role'            => 'reporter',
-            'signer_name'     => $user->first_name . ' ' . $user->last_name,
-            'signer_position' => $user->position,
-            'signature_image' => $signaturePath,
-            'signed_date'     => $request->signed_date,
+            'report_id'         => $report->id,
+            'role'              => 'reporter',
+            'signer_name'       => $user->first_name . ' ' . $user->last_name,
+            'signer_position'   => $user->position,
+            'user_signature_id' => $userSignature->id,
+            'signed_date'       => $request->signed_date,
         ]);
 
         // อัปเดตสถานะรายงานเป็น "ลงนามแล้ว"
@@ -93,51 +82,50 @@ class SignatureController extends Controller
             ->with('success', 'ลงนามรายงานเรียบร้อยแล้ว');
     }
 
-    // ========== ลบลายเซ็น ==========
-    public function destroy(Report $report, Signature $signature)
+    // ========== Helper: ลบ record ลายเซ็น (ลบไฟล์เฉพาะแบบเก่าที่เป็นไฟล์ต่อรายงาน) ==========
+    private function deleteSignatureRecord(Signature $signature): void
     {
-        // ตรวจสิทธิ์
-        if ($report->user_id !== Auth::id() || $signature->report_id !== $report->id) {
-            abort(403);
-        }
-
-        // ลบไฟล์รูป
-        if ($signature->signature_image && Storage::disk('public')->exists($signature->signature_image)) {
-            Storage::disk('public')->delete($signature->signature_image);
+        // แบบเก่า: ไฟล์ต่อรายงาน → ลบไฟล์ได้ / แบบใหม่: อ้างเวอร์ชันประจำตัว → ห้ามลบไฟล์ (ใช้ร่วมกับเอกสารอื่น)
+        if ($signature->signature_image && !$signature->user_signature_id) {
+            foreach (['local', 'public'] as $disk) {
+                if (Storage::disk($disk)->exists($signature->signature_image)) {
+                    Storage::disk($disk)->delete($signature->signature_image);
+                }
+            }
         }
 
         $signature->delete();
+    }
 
-        // ถ้าเป็นลายเซ็นผู้รายงาน → กลับเป็นสถานะ draft
+    // ========== ลบลายเซ็น ==========
+    public function destroy(Report $report, Signature $signature)
+    {
+        // signature ต้องเป็นของรายงานนี้จริง
+        if ($signature->report_id !== $report->id) {
+            abort(403);
+        }
+
+        // สิทธิ์: admin ลบได้ทุกลายเซ็น / เจ้าของรายงานลบได้เฉพาะลายเซ็นผู้รายงานของตัวเอง
+        $user = Auth::user();
+        $isOwnerReporterSig = $report->user_id === $user->id && $signature->role === 'reporter';
+
+        if (!$user->isAdmin() && !$isOwnerReporterSig) {
+            abort(403, 'คุณไม่มีสิทธิ์ลบลายเซ็นนี้');
+        }
+
+        $this->deleteSignatureRecord($signature);
+
+        // ปรับสถานะรายงานให้สอดคล้อง
         if ($signature->role === 'reporter') {
+            // ลบลายเซ็นผู้รายงาน → กลับเป็นร่าง (เริ่ม workflow ใหม่)
             $report->update(['status' => 'draft']);
+        } elseif ($report->status === 'approved') {
+            // ลบลายเซ็นผู้บังคับบัญชาจากรายงานที่อนุมัติแล้ว → เซ็นไม่ครบ ถอยเป็น "ลงนามแล้ว"
+            $report->update(['status' => 'signed']);
         }
 
         return redirect()->route('reports.show', $report)
             ->with('success', 'ลบลายเซ็นเรียบร้อยแล้ว');
     }
 
-    // ========== Helper: บันทึก base64 → file ==========
-    private function saveDrawnSignature($base64Data, $reportId, $userId)
-    {
-        // แยก header กับ data (data:image/png;base64,iVBORw0KG...)
-        if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $matches)) {
-            $extension = $matches[1];
-            $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
-        } else {
-            $extension = 'png';
-        }
-
-        // Decode
-        $imageData = base64_decode($base64Data);
-
-        // ตั้งชื่อไฟล์
-        $filename = 'signature_reporter_' . $reportId . '_' . time() . '.' . $extension;
-        $path = 'signatures/' . $filename;
-
-        // บันทึก
-        Storage::disk('public')->put($path, $imageData);
-
-        return $path;
-    }
 }

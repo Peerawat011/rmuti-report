@@ -10,13 +10,34 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class ReportController extends Controller
 {
     // ========== หน้ารายการรายงานของฉัน ==========
-    public function index()
+    public function index(Request $request)
     {
-        $reports = Report::where('user_id', Auth::id())
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $filter = $request->query('filter');
 
-        return view('reports.index', compact('reports'));
+        $query = Report::where('user_id', Auth::id());
+
+        // กรองเฉพาะรายงานที่ผู้บังคับบัญชาลงนามแล้ว (เรียงตามการลงนามล่าสุด)
+        if ($filter === 'signed') {
+            $query->whereNotNull('last_signed_at')->orderByDesc('last_signed_at');
+
+            // เปิดดูรายการนี้ = รับทราบการลงนามใหม่ทั้งหมดแล้ว (เคลียร์ badge)
+            \Illuminate\Support\Facades\DB::table('reports')
+                ->where('user_id', Auth::id())
+                ->whereNotNull('last_signed_at')
+                ->update(['owner_seen_at' => now()]);
+        } else {
+            $filter = null;
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $reports = $query->paginate(10)->withQueryString();
+
+        // จำนวนรายงานของฉันที่ถูกส่งกลับให้แก้ไข (แสดงแถบเตือนบนหัวรายการ)
+        $myRevisionCount = Report::where('user_id', Auth::id())
+            ->where('status', 'revision')
+            ->count();
+
+        return view('reports.index', compact('reports', 'myRevisionCount', 'filter'));
     }
 
     // ========== หน้าสร้างรายงานใหม่ ==========
@@ -58,8 +79,15 @@ class ReportController extends Controller
     // ========== หน้าดูรายงาน ==========
     public function show(Report $report)
     {
-        
         $this->authorize_report($report, 'view');   // ← เพิ่ม 'view'
+
+        // เจ้าของเปิดดู = รับทราบการลงนามล่าสุดของรายงานนี้แล้ว (ไม่แตะ updated_at)
+        if ($report->user_id === Auth::id() && $report->last_signed_at) {
+            \Illuminate\Support\Facades\DB::table('reports')
+                ->where('id', $report->id)
+                ->update(['owner_seen_at' => now()]);
+        }
+
         $report->load('signatures');
         return view('reports.show', compact('report'));
     }

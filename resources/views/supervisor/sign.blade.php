@@ -115,11 +115,19 @@
             </div>
             <div class="card-body">
 
+                @php $mySignature = Auth::user()->activeSignature; @endphp
+
                 {{-- Mode toggle --}}
                 <div class="btn-group w-100 mb-3" role="group">
-                    <input type="radio" class="btn-check" name="signature_mode" id="modeDraw" value="draw" checked>
+                    @if($mySignature)
+                        <input type="radio" class="btn-check" name="signature_mode" id="modeProfile" value="profile" checked>
+                        <label class="btn btn-outline-primary" for="modeProfile">
+                            <i class="bi bi-star-fill"></i> ลายเซ็นประจำตัว
+                        </label>
+                    @endif
+                    <input type="radio" class="btn-check" name="signature_mode" id="modeDraw" value="draw" {{ $mySignature ? '' : 'checked' }}>
                     <label class="btn btn-outline-primary" for="modeDraw">
-                        <i class="bi bi-pencil-fill"></i> วาดลายเซ็น
+                        <i class="bi bi-pencil-fill"></i> วาดใหม่
                     </label>
                     <input type="radio" class="btn-check" name="signature_mode" id="modeUpload" value="upload">
                     <label class="btn btn-outline-primary" for="modeUpload">
@@ -127,8 +135,25 @@
                     </label>
                 </div>
 
+                {{-- Profile signature section --}}
+                @if($mySignature)
+                    <div id="profileSection">
+                        <div class="text-center p-3 border rounded" style="border: 2px solid #A5D6A7 !important; background: #F7FBF7;">
+                            <img src="{{ route('profile.signature.preview') }}?v={{ $mySignature->id }}"
+                                 alt="ลายเซ็นประจำตัว" style="max-height: 120px; max-width: 100%;">
+                            <div class="small text-muted mt-2">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                ใช้ลายเซ็นประจำตัวของคุณ (แนะนำ — ไม่ต้องวาดใหม่ทุกครั้ง)
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-info-circle"></i> หากวาดใหม่หรืออัปโหลด ระบบจะบันทึกเป็นลายเซ็นประจำตัวเวอร์ชันใหม่ให้อัตโนมัติ
+                        </small>
+                    </div>
+                @endif
+
                 {{-- Draw section --}}
-                <div id="drawSection">
+                <div id="drawSection" @if($mySignature) style="display: none;" @endif>
                     <div class="border rounded" style="border: 2px dashed #FFB74D !important; background: #FFFEF8;">
                         <canvas id="signaturePad" style="width: 100%; height: 200px; cursor: crosshair; touch-action: none;"></canvas>
                     </div>
@@ -199,18 +224,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('clearBtn').addEventListener('click', () => signaturePad.clear());
 
-    document.getElementById('modeDraw').addEventListener('change', function () {
-        if (this.checked) {
-            document.getElementById('drawSection').style.display = 'block';
-            document.getElementById('uploadSection').style.display = 'none';
-        }
-    });
+    const profileSection = document.getElementById('profileSection');
 
-    document.getElementById('modeUpload').addEventListener('change', function () {
-        if (this.checked) {
-            document.getElementById('drawSection').style.display = 'none';
-            document.getElementById('uploadSection').style.display = 'block';
-        }
+    function switchMode(mode) {
+        if (profileSection) profileSection.style.display = mode === 'profile' ? 'block' : 'none';
+        document.getElementById('drawSection').style.display = mode === 'draw' ? 'block' : 'none';
+        document.getElementById('uploadSection').style.display = mode === 'upload' ? 'block' : 'none';
+        if (mode === 'draw') resizeCanvas();   // canvas ที่เคยถูกซ่อนต้องปรับขนาดใหม่
+    }
+
+    document.querySelectorAll('input[name="signature_mode"]').forEach(function (radio) {
+        radio.addEventListener('change', function () { switchMode(this.value); });
     });
 
     document.getElementById('signatureForm').addEventListener('submit', function (e) {

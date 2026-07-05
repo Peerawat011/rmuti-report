@@ -63,10 +63,10 @@ class SupervisorController extends Controller
                 ->with('error', $report->whyCantSign($userId));
         }
 
-        // Validate
+        // Validate (profile = ใช้ลายเซ็นประจำตัวที่ตั้งไว้)
         $request->validate([
-            'comment'        => 'nullable|string|max:1000',          // ← เปลี่ยน required เป็น nullable
-            'signature_mode' => 'required|in:draw,upload',
+            'comment'        => 'nullable|string|max:1000',
+            'signature_mode' => 'required|in:profile,draw,upload',
             'signature_data' => 'required_if:signature_mode,draw|nullable|string',
             'signature_file' => 'required_if:signature_mode,upload|nullable|image|mimes:jpeg,png,jpg|max:2048',
             'signed_date'    => 'required|date',
@@ -78,30 +78,29 @@ class SupervisorController extends Controller
 
         $user = Auth::user();
 
-        // บันทึกรูปลายเซ็น
-        if ($request->signature_mode === 'draw') {
-            $signaturePath = $this->saveDrawnSignature(
-                $request->signature_data,
-                $report->id,
-                $role
-            );
+        // หาลายเซ็นประจำตัวที่จะใช้: เวอร์ชันล่าสุด หรือสร้างเวอร์ชันใหม่จากที่วาด/อัปโหลด
+        if ($request->signature_mode === 'profile') {
+            $userSignature = $user->activeSignature;
+            if (!$userSignature) {
+                return back()->withErrors(['signature_mode' => 'คุณยังไม่มีลายเซ็นประจำตัว กรุณาวาดหรืออัปโหลดลายเซ็นก่อน']);
+            }
         } else {
-            $file = $request->file('signature_file');
-            $filename = 'signature_sup' . $role . '_' . $report->id . '_' . time()
-                      . '.' . $file->getClientOriginalExtension();
-            $signaturePath = $file->storeAs('signatures', $filename, 'public');
+            $userSignature = \App\Http\Controllers\UserSignatureController::createVersion($request, $user->id);
         }
 
-        // บันทึกลง database
+        // บันทึกลง database — อ้างอิงเวอร์ชันลายเซ็นประจำตัว (ไม่ก็อปไฟล์ต่อรายงาน)
         Signature::create([
-            'report_id'       => $report->id,
-            'role'            => 'supervisor_' . $role,
-            'signer_name'     => $user->first_name . ' ' . $user->last_name,
-            'signer_position' => $user->position,
-            'comment'         => $request->comment,
-            'signature_image' => $signaturePath,
-            'signed_date'     => $request->signed_date,
+            'report_id'         => $report->id,
+            'role'              => 'supervisor_' . $role,
+            'signer_name'       => $user->first_name . ' ' . $user->last_name,
+            'signer_position'   => $user->position,
+            'comment'           => $request->comment,
+            'user_signature_id' => $userSignature->id,
+            'signed_date'       => $request->signed_date,
         ]);
+
+        // บันทึกเวลาที่ผู้บังคับบัญชาลงนามล่าสุด (ใช้แจ้งเตือนเจ้าของรายงาน)
+        $report->update(['last_signed_at' => now()]);
 
         // เช็คว่าทุก supervisor ที่เลือกไว้เซ็นครบหรือยัง
         $report->refresh(); // โหลดข้อมูลใหม่หลังเพิ่ม signature
@@ -148,9 +147,14 @@ class SupervisorController extends Controller
         ]);
 
         // ลบลายเซ็นทั้งหมด (เนื้อหาจะถูกแก้ — ลายเซ็นเดิมใช้ไม่ได้แล้ว ต้องลงนามใหม่)
+        // ลบไฟล์เฉพาะแบบเก่าที่เป็นไฟล์ต่อรายงาน — แบบอ้างเวอร์ชันประจำตัวห้ามลบไฟล์ (ใช้ร่วมกับเอกสารอื่น)
         foreach ($report->signatures as $signature) {
-            if ($signature->signature_image && Storage::disk('public')->exists($signature->signature_image)) {
-                Storage::disk('public')->delete($signature->signature_image);
+            if ($signature->signature_image && !$signature->user_signature_id) {
+                foreach (['local', 'public'] as $disk) {
+                    if (Storage::disk($disk)->exists($signature->signature_image)) {
+                        Storage::disk($disk)->delete($signature->signature_image);
+                    }
+                }
             }
             $signature->delete();
         }
@@ -160,28 +164,11 @@ class SupervisorController extends Controller
             'revision_reason' => $request->reject_reason,
             'revision_by'     => $userId,
             'revision_at'     => now(),
+            'last_signed_at'  => null,   // ลายเซ็นถูกลบหมดแล้ว — ล้างสถานะ "ถูกลงนาม"
         ]);
 
         return redirect()->route('supervisor.inbox')
             ->with('success', 'ส่งรายงานกลับให้ผู้รายงานแก้ไขเรียบร้อยแล้ว');
     }
 
-    // ========== Helper: บันทึก base64 → file ==========
-    private function saveDrawnSignature($base64Data, $reportId, $role)
-    {
-        if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $matches)) {
-            $extension = $matches[1];
-            $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
-        } else {
-            $extension = 'png';
-        }
-
-        $imageData = base64_decode($base64Data);
-        $filename = 'signature_sup' . $role . '_' . $reportId . '_' . time() . '.' . $extension;
-        $path = 'signatures/' . $filename;
-
-        Storage::disk('public')->put($path, $imageData);
-
-        return $path;
-    }
 }

@@ -20,6 +20,7 @@ class Report extends Model
         'documents', 'details', 'suggestions',
         'status',
         'revision_reason', 'revision_by', 'revision_at',
+        'last_signed_at', 'owner_seen_at',
     ];
 
     protected $casts = [
@@ -27,6 +28,8 @@ class Report extends Model
         'start_date'  => 'date',
         'end_date'    => 'date',
         'revision_at' => 'datetime',
+        'last_signed_at' => 'datetime',
+        'owner_seen_at'  => 'datetime',
     ];
 
     // ความสัมพันธ์: report เป็นของ user คนหนึ่ง

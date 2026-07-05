@@ -236,11 +236,23 @@
                 <strong style="color: #BF360C;">
                     <i class="bi bi-person-fill"></i> ผู้รายงาน
                 </strong>
-                @if($reporterSig)
-                    <span class="badge bg-success"><i class="bi bi-check"></i> ลงนามแล้ว</span>
-                @else
-                    <span class="badge bg-secondary">รอลงนาม</span>
-                @endif
+                <span class="d-flex align-items-center gap-2">
+                    @if($reporterSig)
+                        <span class="badge bg-success"><i class="bi bi-check"></i> ลงนามแล้ว</span>
+                        @if(Auth::user()->isAdmin())
+                            <form action="{{ route('reports.sign.delete', [$report, $reporterSig]) }}" method="POST" class="d-inline m-0"
+                                  onsubmit="return confirm('ยืนยันลบลายเซ็นผู้รายงาน?\n\nสถานะรายงานจะกลับเป็น \'ร่าง\' และผู้รายงานต้องลงนามใหม่');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="ลบลายเซ็น (ผู้ดูแลระบบ)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        @endif
+                    @else
+                        <span class="badge bg-secondary">รอลงนาม</span>
+                    @endif
+                </span>
             </div>
 
             @if($reporterSig)
@@ -273,11 +285,23 @@
                             <i class="bi bi-person-check-fill"></i> ผู้บังคับบัญชา ลำดับที่ {{ $level }}
                             <small class="text-muted">— {{ $sup->first_name }} {{ $sup->last_name }}</small>
                         </strong>
-                        @if($sig)
-                            <span class="badge bg-success"><i class="bi bi-check"></i> ลงนามแล้ว</span>
-                        @else
-                            <span class="badge bg-secondary">รอลงนาม</span>
-                        @endif
+                        <span class="d-flex align-items-center gap-2">
+                            @if($sig)
+                                <span class="badge bg-success"><i class="bi bi-check"></i> ลงนามแล้ว</span>
+                                @if(Auth::user()->isAdmin())
+                                    <form action="{{ route('reports.sign.delete', [$report, $sig]) }}" method="POST" class="d-inline m-0"
+                                          onsubmit="return confirm('ยืนยันลบลายเซ็นผู้บังคับบัญชา ลำดับที่ {{ $level }}?\n\nหากรายงานอนุมัติแล้ว สถานะจะถอยกลับเป็น \'ลงนามแล้ว\' และต้องลงนามใหม่');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="ลบลายเซ็น (ผู้ดูแลระบบ)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                            @else
+                                <span class="badge bg-secondary">รอลงนาม</span>
+                            @endif
+                        </span>
                     </div>
 
                     @if($sig)
@@ -337,22 +361,27 @@
                     </div>
                 </div>
 
-                <hr class="my-3" style="max-width: 300px; margin-left: auto; margin-right: auto;">
+                @php $isOwner = $report->user_id === Auth::id(); @endphp
+                @if($isOwner || Auth::user()->isAdmin())
+                    <hr class="my-3" style="max-width: 300px; margin-left: auto; margin-right: auto;">
 
-                <div class="d-flex gap-2 justify-content-center">
-                    <a href="{{ route('reports.sign', $report) }}" class="btn btn-sm btn-outline-warning">
-                        <i class="bi bi-pencil"></i> แก้ไขลายเซ็น
-                    </a>
-                    <form action="{{ route('reports.sign.delete', [$report, $reporterSig]) }}"
-                          method="POST" class="d-inline"
-                          onsubmit="return confirm('ยืนยันการลบลายเซ็น?');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-trash"></i> ลบลายเซ็น
-                        </button>
-                    </form>
-                </div>
+                    <div class="d-flex gap-2 justify-content-center">
+                        @if($isOwner)
+                            <a href="{{ route('reports.sign', $report) }}" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-pencil"></i> แก้ไขลายเซ็น
+                            </a>
+                        @endif
+                        <form action="{{ route('reports.sign.delete', [$report, $reporterSig]) }}"
+                              method="POST" class="d-inline"
+                              onsubmit="return confirm('ยืนยันการลบลายเซ็น?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> ลบลายเซ็น
+                            </button>
+                        </form>
+                    </div>
+                @endif
             </div>
         @else
             {{-- ยังไม่ลงนาม --}}

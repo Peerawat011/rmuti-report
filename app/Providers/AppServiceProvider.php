@@ -79,10 +79,20 @@ class AppServiceProvider extends ServiceProvider
                 $revisionCount = Report::where('user_id', $userId)
                     ->where('status', 'revision')
                     ->count();
+
+                // 4) รายงานของฉันที่มีการลงนามใหม่ (ยังไม่ได้เปิดดู) — ทุก role
+                $signedNewsCount = Report::where('user_id', $userId)
+                    ->whereNotNull('last_signed_at')
+                    ->where(function ($q) {
+                        $q->whereNull('owner_seen_at')
+                          ->orWhereColumn('last_signed_at', '>', 'owner_seen_at');
+                    })
+                    ->count();
             }
 
             $view->with('pendingSignCount', $pendingSignCount)
-                 ->with('revisionCount', $revisionCount);
+                 ->with('revisionCount', $revisionCount)
+                 ->with('signedNewsCount', $signedNewsCount ?? 0);
         });
     }
 }

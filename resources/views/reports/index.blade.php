@@ -15,15 +15,43 @@
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="mb-1" style="color: #EF6C00;">
-                <i class="bi bi-file-earmark-text-fill"></i> รายงานของฉัน
-            </h3>
-            <small class="text-muted">แบบรายงานการพัฒนาบุคลากรโดยการอบรมศึกษาดูงานประชุมสัมมนา</small>
+            @if(($filter ?? null) === 'signed')
+                <h3 class="mb-1" style="color: #198754;">
+                    <i class="bi bi-patch-check-fill"></i> รายงานที่ลงนามแล้ว
+                </h3>
+                <small class="text-muted">เฉพาะรายงานของฉันที่ผู้บังคับบัญชาลงนามแล้ว — เรียงตามการลงนามล่าสุด</small>
+            @else
+                <h3 class="mb-1" style="color: #EF6C00;">
+                    <i class="bi bi-file-earmark-text-fill"></i> รายงานของฉัน
+                </h3>
+                <small class="text-muted">แบบรายงานการพัฒนาบุคลากรโดยการอบรมศึกษาดูงานประชุมสัมมนา</small>
+            @endif
         </div>
-        <a href="{{ route('reports.create') }}" class="btn btn-gov">
-            <i class="bi bi-plus-circle-fill"></i> สร้างรายงานใหม่
-        </a>
+        <div class="d-flex gap-2">
+            @if(($filter ?? null) === 'signed')
+                <a href="{{ route('reports.index') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-list-ul"></i> ดูรายงานทั้งหมด
+                </a>
+            @else
+                <a href="{{ route('reports.index', ['filter' => 'signed']) }}" class="btn btn-outline-primary">
+                    <i class="bi bi-patch-check"></i> ที่ลงนามแล้ว
+                </a>
+                <a href="{{ route('reports.create') }}" class="btn btn-gov">
+                    <i class="bi bi-plus-circle-fill"></i> สร้างรายงานใหม่
+                </a>
+            @endif
+        </div>
     </div>
+
+    {{-- แถบเตือน: มีรายงานถูกส่งกลับให้แก้ไข --}}
+    @if(($myRevisionCount ?? 0) > 0 && ($filter ?? null) !== 'signed')
+        <div class="alert alert-danger d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <strong><i class="bi bi-arrow-return-left"></i> มีรายงานถูกส่งกลับให้แก้ไข {{ $myRevisionCount }} ฉบับ</strong>
+                <div class="small">มองหาสถานะ <span class="badge bg-danger">ส่งกลับแก้ไข</span> ในตารางด้านล่าง — เปิดดูเหตุผล แก้ไข แล้วลงนามส่งใหม่</div>
+            </div>
+        </div>
+    @endif
 
     {{-- Reports Table --}}
     <div class="card border-0 shadow-sm">

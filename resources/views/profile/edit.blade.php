@@ -207,5 +207,127 @@
         </div>
     </div>
 
+    {{-- ===== ลายเซ็นประจำตัว ===== --}}
+    @php $mySignature = Auth::user()->activeSignature; @endphp
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0" style="color: #EF6C00;">
+                <i class="bi bi-vector-pen"></i> ลายเซ็นประจำตัว
+            </h5>
+        </div>
+        <div class="card-body">
+
+            <div class="alert alert-info py-2 small">
+                <i class="bi bi-shield-lock-fill"></i>
+                ลายเซ็นถูกเก็บในพื้นที่ปิด เข้าถึงได้เฉพาะผู้เกี่ยวข้องกับเอกสาร และถูกประทับเลขที่เอกสารกำกับทุกครั้งที่แสดง
+                — ตั้งไว้ครั้งเดียว ใช้ลงนามได้ทุกรายงานโดยไม่ต้องวาดใหม่
+            </div>
+
+            {{-- ลายเซ็นปัจจุบัน --}}
+            @if($mySignature)
+                <div class="text-center p-3 border rounded mb-3" style="background: #F7FBF7; border: 2px solid #A5D6A7 !important;">
+                    <small class="text-muted d-block mb-2">ลายเซ็นปัจจุบันของคุณ (ตั้งเมื่อ {{ $mySignature->created_at->format('d/m/Y H:i') }})</small>
+                    <img src="{{ route('profile.signature.preview') }}?v={{ $mySignature->id }}"
+                         alt="ลายเซ็นประจำตัว" style="max-height: 120px; max-width: 100%;">
+                </div>
+            @else
+                <div class="text-center p-4 border rounded mb-3" style="border: 2px dashed #FFB74D !important; background: #FFFEF8;">
+                    <i class="bi bi-pen" style="font-size: 2rem; color: #FFB74D;"></i>
+                    <div class="text-muted small mt-2">ยังไม่ได้ตั้งลายเซ็นประจำตัว — วาดหรืออัปโหลดด้านล่าง</div>
+                </div>
+            @endif
+
+            {{-- ฟอร์มตั้ง/เปลี่ยนลายเซ็น --}}
+            <form action="{{ route('profile.signature.store') }}" method="POST" enctype="multipart/form-data" id="profileSigForm">
+                @csrf
+
+                <div class="btn-group w-100 mb-3" role="group">
+                    <input type="radio" class="btn-check" name="signature_mode" id="sigModeDraw" value="draw" checked>
+                    <label class="btn btn-outline-primary" for="sigModeDraw"><i class="bi bi-pencil-fill"></i> วาดลายเซ็น</label>
+                    <input type="radio" class="btn-check" name="signature_mode" id="sigModeUpload" value="upload">
+                    <label class="btn btn-outline-primary" for="sigModeUpload"><i class="bi bi-upload"></i> อัปโหลดรูป</label>
+                </div>
+
+                <div id="sigDrawSection">
+                    <div class="border rounded" style="border: 2px dashed #FFB74D !important; background: #FFFEF8;">
+                        <canvas id="profileSigPad" style="width: 100%; height: 180px; cursor: crosshair; touch-action: none;"></canvas>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="sigClearBtn">
+                        <i class="bi bi-eraser"></i> ล้าง
+                    </button>
+                    <input type="hidden" name="signature_data" id="profileSigData">
+                </div>
+
+                <div id="sigUploadSection" style="display: none;">
+                    <input type="file" class="form-control" name="signature_file"
+                           accept="image/jpeg,image/png,image/jpg">
+                    <small class="text-muted">รองรับ JPG, PNG • ไม่เกิน 2 MB • แนะนำพื้นหลังโปร่งใส (PNG)</small>
+                </div>
+
+                @if($mySignature)
+                    <div class="small text-muted mt-2">
+                        <i class="bi bi-info-circle"></i>
+                        การบันทึกจะสร้าง<strong>เวอร์ชันใหม่</strong> — รายงานที่ลงนามไปแล้วยังแสดงลายเซ็นเวอร์ชันเดิม ไม่เปลี่ยนย้อนหลัง
+                    </div>
+                @endif
+
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="submit" class="btn btn-gov">
+                        <i class="bi bi-check2-circle"></i> {{ $mySignature ? 'บันทึกลายเซ็นเวอร์ชันใหม่' : 'บันทึกลายเซ็นประจำตัว' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('profileSigPad');
+
+    const pad = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(255, 255, 255, 0)',
+        penColor: '#000000',
+        minWidth: 1.5,
+        maxWidth: 3,
+    });
+
+    function resizeSigCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+        pad.clear();
+    }
+
+    resizeSigCanvas();
+    window.addEventListener('resize', resizeSigCanvas);
+
+    document.getElementById('sigClearBtn').addEventListener('click', () => pad.clear());
+
+    document.getElementById('sigModeDraw').addEventListener('change', function () {
+        document.getElementById('sigDrawSection').style.display = 'block';
+        document.getElementById('sigUploadSection').style.display = 'none';
+        resizeSigCanvas();
+    });
+
+    document.getElementById('sigModeUpload').addEventListener('change', function () {
+        document.getElementById('sigDrawSection').style.display = 'none';
+        document.getElementById('sigUploadSection').style.display = 'block';
+    });
+
+    document.getElementById('profileSigForm').addEventListener('submit', function (e) {
+        const mode = document.querySelector('#profileSigForm input[name="signature_mode"]:checked').value;
+        if (mode === 'draw') {
+            if (pad.isEmpty()) {
+                e.preventDefault();
+                alert('กรุณาวาดลายเซ็นก่อนบันทึก');
+                return false;
+            }
+            document.getElementById('profileSigData').value = pad.toDataURL('image/png');
+        }
+    });
+});
+</script>
 @endsection

@@ -7,14 +7,11 @@
     // ฝังโลโก้เป็น base64 เช่นกัน (DomPDF บน Windows โหลด path รูปตรงๆ ไม่ได้)
     $logoBase64 = base64_encode(file_get_contents(public_path('images/logo-rmuti.png')));
 
-    // helper: แปลงรูปใน storage/app/public เป็น data URI (ใช้กับรูปลายเซ็น)
-    $imgDataUri = function ($relPath) {
-        if (!$relPath) return null;
-        $full = storage_path('app/public/' . $relPath);
-        if (!is_file($full)) return null;
-        $ext = strtolower(pathinfo($full, PATHINFO_EXTENSION));
-        $mime = in_array($ext, ['jpg', 'jpeg']) ? 'image/jpeg' : 'image/png';
-        return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($full));
+    // helper: เรนเดอร์รูปลายเซ็น (พร้อม watermark เลขที่เอกสาร) เป็น data URI
+    $sigDataUri = function ($signature) {
+        if (!$signature) return null;
+        $png = \App\Services\SignatureImage::render($signature);
+        return $png ? 'data:image/png;base64,' . base64_encode($png) : null;
     };
 @endphp
 <!DOCTYPE html>
@@ -342,8 +339,8 @@
     {{-- ลายเซ็นผู้รายงาน (ชิดขวาตามต้นฉบับ) --}}
     @php $reporterSig = $report->signatures->where('role', 'reporter')->first(); @endphp
     <div class="sign-right">
-        @if($reporterSig && $imgDataUri($reporterSig->signature_image))
-            <img src="{{ $imgDataUri($reporterSig->signature_image) }}" class="signature-image">
+        @if($reporterSig && $sigDataUri($reporterSig))
+            <img src="{{ $sigDataUri($reporterSig) }}" class="signature-image">
         @else
             <div style="height: 55px;"></div>
         @endif
@@ -378,8 +375,8 @@
 
                 {{-- ลายเซ็น (ชิดขวาตามต้นฉบับ) --}}
                 <div class="sign-right" style="margin-top: 4px;">
-                    @if($sig && $imgDataUri($sig->signature_image))
-                        <img src="{{ $imgDataUri($sig->signature_image) }}" class="signature-image">
+                    @if($sig && $sigDataUri($sig))
+                        <img src="{{ $sigDataUri($sig) }}" class="signature-image">
                     @else
                         <div style="height: 45px;"></div>
                     @endif

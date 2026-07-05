@@ -57,6 +57,14 @@ use App\Http\Controllers\AnnouncementController;
         Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
         Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar'])->name('profile.avatar.delete');
 
+        // ===== ลายเซ็นประจำตัว + เสิร์ฟรูปลายเซ็นแบบตรวจสิทธิ์ =====
+        Route::post('/profile/signature', [\App\Http\Controllers\UserSignatureController::class, 'store'])
+            ->name('profile.signature.store');
+        Route::get('/profile/signature/preview', [\App\Http\Controllers\UserSignatureController::class, 'myPreview'])
+            ->name('profile.signature.preview');
+        Route::get('/signatures/{signature}/image', [\App\Http\Controllers\UserSignatureController::class, 'reportImage'])
+            ->name('signatures.image');
+
 
         // ===== Signature Routes  =====
         Route::get('/reports/{report}/sign', [\App\Http\Controllers\SignatureController::class, 'create'])

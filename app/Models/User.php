@@ -73,6 +73,18 @@ public function isAdmin()
     return $this->role === 'admin';
 }
 
+// ลายเซ็นประจำตัวทุกเวอร์ชัน
+public function signatures()
+{
+    return $this->hasMany(UserSignature::class);
+}
+
+// ลายเซ็นประจำตัวเวอร์ชันล่าสุด (ที่ใช้ลงนามปัจจุบัน)
+public function activeSignature()
+{
+    return $this->hasOne(UserSignature::class)->latestOfMany();
+}
+
 // label ภาษาไทย
 public function getRoleLabelAttribute()
 {

@@ -415,7 +415,7 @@
     <div class="dropdown">
         <button class="btn-user dropdown-toggle position-relative"
                 type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            @php $notifTotal = ($pendingSignCount ?? 0) + ($revisionCount ?? 0); @endphp
+            @php $notifTotal = ($pendingSignCount ?? 0) + ($revisionCount ?? 0) + ($signedNewsCount ?? 0); @endphp
             @if($notifTotal > 0)
                 <span class="notif-dot">{{ $notifTotal > 9 ? '9+' : $notifTotal }}</span>
             @endif
@@ -451,8 +451,19 @@
                 </a>
             </li>
             <li>
-                <a class="dropdown-item" href="{{ route('reports.index') }}">
+                <a class="dropdown-item d-flex align-items-center" href="{{ route('reports.index') }}">
                     <i class="bi bi-file-earmark-text-fill text-primary"></i> รายงานของฉัน
+                    @if(($revisionCount ?? 0) > 0)
+                        <span class="menu-badge" title="มีรายงานถูกส่งกลับให้แก้ไข">{{ $revisionCount }}</span>
+                    @endif
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item d-flex align-items-center" href="{{ route('reports.index', ['filter' => 'signed']) }}">
+                    <i class="bi bi-patch-check-fill text-success"></i> รายงานที่ลงนามแล้ว
+                    @if(($signedNewsCount ?? 0) > 0)
+                        <span class="menu-badge" style="background: #198754;" title="มีการลงนามใหม่ที่ยังไม่ได้ดู">{{ $signedNewsCount }}</span>
+                    @endif
                 </a>
             </li>
             <li><hr class="dropdown-divider"></li>
@@ -541,9 +552,9 @@
     {{-- Signature Pad library (สำหรับวาดลายเซ็น) --}}
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
-    {{-- Toast แจ้งเตือน: รายงานรอลงนาม / ถูกส่งกลับแก้ไข --}}
+    {{-- Toast แจ้งเตือน: รายงานรอลงนาม / ถูกส่งกลับแก้ไข / มีการลงนามใหม่ --}}
     @auth
-    @if((($pendingSignCount ?? 0) + ($revisionCount ?? 0)) > 0)
+    @if((($pendingSignCount ?? 0) + ($revisionCount ?? 0) + ($signedNewsCount ?? 0)) > 0)
     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
         <div id="pendingSignToast" class="toast border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="sign-toast d-flex align-items-start">
@@ -562,6 +573,15 @@
                         </div>
                         <div class="small text-muted mb-2">กรุณาตรวจสอบและลงนามรายงานที่ค้างอยู่</div>
                     @endif
+                    @if(($signedNewsCount ?? 0) > 0)
+                        <div class="fw-bold mb-1 text-success">
+                            <i class="bi bi-patch-check-fill"></i>
+                            รายงานของคุณได้รับการลงนามใหม่ {{ $signedNewsCount }} ฉบับ
+                        </div>
+                        <div class="small text-muted mb-2">
+                            <a href="{{ route('reports.index', ['filter' => 'signed']) }}" class="link-gov">เปิดดูรายงานที่ลงนามแล้ว →</a>
+                        </div>
+                    @endif
                     <a href="{{ (Auth::user()->isSupervisor() && ($revisionCount ?? 0) == 0) ? route('supervisor.inbox') : route('reports.index') }}"
                        class="btn btn-gov btn-sm">
                         <i class="bi bi-arrow-right-circle"></i> เปิดดูรายงาน
@@ -574,7 +594,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // เด้งเตือนครั้งเดียวต่อ session (เด้งซ้ำเมื่อยอดเปลี่ยน)
-            var key = '{{ ($pendingSignCount ?? 0) }}-{{ ($revisionCount ?? 0) }}';
+            var key = '{{ ($pendingSignCount ?? 0) }}-{{ ($revisionCount ?? 0) }}-{{ ($signedNewsCount ?? 0) }}';
             var shownFor = sessionStorage.getItem('pendingSignToastShown');
             if (shownFor !== key) {
                 var el = document.getElementById('pendingSignToast');
