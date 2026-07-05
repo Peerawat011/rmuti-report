@@ -6,6 +6,7 @@ use App\Models\Report;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -24,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // บังคับ https บน production (สำหรับ deploy หลัง proxy)
+        if (config('app.env') == 'production') {
+            URL::forceScheme('https');
+        }
+
         // อีเมลรีเซ็ตรหัสผ่านเป็นภาษาไทย
         ResetPassword::toMailUsing(function ($notifiable, string $token) {
             $url = route('password.reset', ['token' => $token, 'email' => $notifiable->getEmailForPasswordReset()]);
