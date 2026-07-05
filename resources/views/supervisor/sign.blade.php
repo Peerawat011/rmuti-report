@@ -54,6 +54,40 @@
         </div>
     </div>
 
+    {{-- ส่งกลับแก้ไข --}}
+    <div class="card border-0 shadow-sm mb-3" style="border-left: 4px solid #DC3545 !important;">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <strong class="text-danger"><i class="bi bi-arrow-return-left"></i> รายงานยังไม่สมบูรณ์?</strong>
+                    <div class="small text-muted">ส่งกลับให้ผู้รายงานแก้ไข พร้อมระบุเหตุผล — ระบบจะแจ้งเตือนผู้รายงานให้ทราบ</div>
+                </div>
+                <button class="btn btn-outline-danger btn-sm" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#rejectBox">
+                    <i class="bi bi-arrow-return-left"></i> ส่งกลับแก้ไข
+                </button>
+            </div>
+
+            <div class="collapse mt-3" id="rejectBox">
+                <form action="{{ route('supervisor.reject', $report) }}" method="POST"
+                      onsubmit="return confirm('ยืนยันส่งรายงานกลับให้แก้ไข?\n\nลายเซ็นทั้งหมดในรายงานนี้จะถูกลบ และผู้รายงานต้องลงนามใหม่หลังแก้ไข');">
+                    @csrf
+                    <label for="reject_reason" class="form-label fw-medium">
+                        เหตุผลที่ส่งกลับแก้ไข <span class="text-danger">*</span>
+                    </label>
+                    <textarea name="reject_reason" id="reject_reason" class="form-control" rows="3"
+                              placeholder="เช่น รายละเอียดข้อ ๔ ยังไม่ครบถ้วน กรุณาเพิ่มเติมสิ่งที่ได้เรียนรู้..."
+                              required>{{ old('reject_reason') }}</textarea>
+                    <div class="d-flex justify-content-end mt-2">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="bi bi-send-fill"></i> ยืนยันส่งกลับแก้ไข
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     {{-- ฟอร์มลงนาม --}}
     <form action="{{ route('supervisor.sign.store', $report) }}" method="POST" enctype="multipart/form-data" id="signatureForm">
         @csrf

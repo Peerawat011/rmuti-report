@@ -71,7 +71,7 @@
                         <input type="checkbox" class="form-check-input" id="remember" name="remember">
                         <label class="form-check-label" for="remember">จดจำฉัน</label>
                     </div>
-                    <a href="#" class="link-gov">ลืมรหัสผ่าน?</a>
+                    <a href="{{ route('password.request') }}" class="link-gov">ลืมรหัสผ่าน?</a>
                 </div>
 
                 {{-- Submit --}}

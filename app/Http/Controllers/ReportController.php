@@ -36,6 +36,7 @@ class ReportController extends Controller
 
         $user = Auth::user();
         $validated['user_id']            = $user->id;
+        $validated['doc_number']         = \App\Services\DocumentNumber::next('training');
         $validated['reporter_name']      = $user->first_name . ' ' . $user->last_name;
         $validated['reporter_position']  = $user->position;
         $validated['reporter_department'] = $user->department;
@@ -84,10 +85,17 @@ class ReportController extends Controller
             $validated['end_date']
         );
 
+        // ถ้าถูกส่งกลับแก้ไข → แก้แล้วกลับเข้าสู่ flow ใหม่ (เริ่มจากร่าง รอลงนามใหม่)
+        if ($report->status === 'revision') {
+            $validated['status'] = 'draft';
+        }
+
         $report->update($validated);
 
         return redirect()->route('reports.show', $report)
-            ->with('success', 'แก้ไขรายงานเรียบร้อยแล้ว');
+            ->with('success', $report->status === 'draft' && $report->revision_reason
+                ? 'แก้ไขรายงานเรียบร้อยแล้ว — กรุณาลงนามใหม่เพื่อส่งให้ผู้บังคับบัญชาอีกครั้ง'
+                : 'แก้ไขรายงานเรียบร้อยแล้ว');
     }
 
     // ========== ลบรายงาน ==========

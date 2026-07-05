@@ -27,7 +27,7 @@ class ReportController extends Controller
                         ->orWhere('order_number', 'like', "%{$search}%");
                 });
             })
-            ->when(in_array($status, ['draft', 'pending_signature', 'signed', 'approved'], true),
+            ->when(in_array($status, ['draft', 'pending_signature', 'signed', 'approved', 'revision'], true),
                 fn ($q) => $q->where('status', $status))
             ->latest()
             ->paginate(15)
@@ -57,6 +57,7 @@ class ReportController extends Controller
 
         $owner = User::findOrFail($validated['user_id']);
         $validated = array_merge($validated, $this->reporterFields($owner));
+        $validated['doc_number'] = \App\Services\DocumentNumber::next('training');
         $validated['status']     = 'draft';
         $validated['total_days'] = $this->calculateDays($validated['start_date'], $validated['end_date']);
 

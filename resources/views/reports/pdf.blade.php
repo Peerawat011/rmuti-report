@@ -206,6 +206,10 @@
 
 {{-- ==================== หน้าที่ 1 ==================== --}}
 
+@if($report->doc_number)
+<div style="text-align: right; font-size: 13px;">เลขที่เอกสาร {{ $report->doc_number }}</div>
+@endif
+
 <div class="header">
     <img src="data:image/png;base64,{{ $logoBase64 }}" alt="Logo" class="logo">
     <span class="university-name">มหาวิทยาลัยเทคโนโลยีราชมงคลอีสาน  วิทยาเขตขอนแก่น</span>

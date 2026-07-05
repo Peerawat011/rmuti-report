@@ -23,6 +23,17 @@ use App\Http\Controllers\AnnouncementController;
     // Register
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
+
+    // ===== ลืมรหัสผ่าน (รีเซ็ตผ่านอีเมลที่สมัคร) =====
+    Route::get('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'showLinkRequestForm'])
+        ->name('password.request');
+    Route::post('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'sendResetLink'])
+        ->middleware('throttle:5,1')
+        ->name('password.email');
+    Route::get('/reset-password/{token}', [\App\Http\Controllers\PasswordResetController::class, 'showResetForm'])
+        ->name('password.reset');
+    Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'reset'])
+        ->name('password.update');
     });
 
         // ===== Routes สำหรับคนที่ล็อกอินแล้ว =====
@@ -92,6 +103,11 @@ use App\Http\Controllers\AnnouncementController;
         Route::post('/supervisor/reports/{report}/sign',
         [\App\Http\Controllers\SupervisorController::class, 'sign'])
         ->name('supervisor.sign.store');
+
+        // ===== ตีกลับให้แก้ไข =====
+        Route::post('/supervisor/reports/{report}/reject',
+        [\App\Http\Controllers\SupervisorController::class, 'reject'])
+        ->name('supervisor.reject');
 
         
 

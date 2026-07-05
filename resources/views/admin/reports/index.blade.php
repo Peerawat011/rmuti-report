@@ -46,6 +46,7 @@
                         <option value="pending_signature" {{ $status == 'pending_signature' ? 'selected' : '' }}>รอลงนาม</option>
                         <option value="signed" {{ $status == 'signed' ? 'selected' : '' }}>ลงนามแล้ว</option>
                         <option value="approved" {{ $status == 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
+                        <option value="revision" {{ $status == 'revision' ? 'selected' : '' }}>ส่งกลับแก้ไข</option>
                     </select>
                 </div>
                 <div class="col-md-2 d-grid">
@@ -73,7 +74,7 @@
                         <tr>
                             <td>
                                 <div class="fw-semibold">{{ \Illuminate\Support\Str::limit($r->topic, 50) ?: '-' }}</div>
-                                <small class="text-muted">{{ $r->activity_type }}</small>
+                                <small class="text-muted">{{ $r->doc_number ? $r->doc_number . ' · ' : '' }}{{ $r->activity_type }}</small>
                             </td>
                             <td>{{ $r->user->full_name ?? $r->reporter_name ?? '-' }}</td>
                             <td>

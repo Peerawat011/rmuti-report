@@ -18,7 +18,7 @@
             <h3 class="mb-1" style="color: #EF6C00;">
                 <i class="bi bi-file-earmark-text-fill"></i> รายงานของฉัน
             </h3>
-            <small class="text-muted">แบบรายงานการพัฒนาบุคลากร — Personnel Development Report</small>
+            <small class="text-muted">แบบรายงานการพัฒนาบุคลากรโดยการอบรมศึกษาดูงานประชุมสัมมนา</small>
         </div>
         <a href="{{ route('reports.create') }}" class="btn btn-gov">
             <i class="bi bi-plus-circle-fill"></i> สร้างรายงานใหม่
@@ -33,7 +33,7 @@
                     <table class="table table-hover mb-0">
                         <thead style="background: #FFF3E0;">
                             <tr>
-                                <th style="width: 60px;">#</th>
+                                <th style="width: 115px;">เลขที่</th>
                                 <th>หัวข้อ</th>
                                 <th style="width: 140px;">ประเภท</th>
                                 <th style="width: 180px;">ระยะเวลา</th>
@@ -44,7 +44,7 @@
                         <tbody>
                             @foreach($reports as $report)
                                 <tr>
-                                    <td class="text-muted">#{{ str_pad($report->id, 4, '0', STR_PAD_LEFT) }}</td>
+                                    <td class="text-muted text-nowrap">{{ $report->doc_number ?? '#' . str_pad($report->id, 4, '0', STR_PAD_LEFT) }}</td>
                                     <td>
                                         <strong>{{ Str::limit($report->topic, 60) }}</strong>
                                         <div class="text-muted small">{{ $report->organizer }}</div>

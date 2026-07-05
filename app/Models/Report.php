@@ -10,7 +10,7 @@ class Report extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
+        'user_id', 'doc_number',
         'supervisor_1_id', 'supervisor_2_id', 'supervisor_3_id',
         'reporter_name', 'reporter_position', 'reporter_department', 'reporter_faculty',
         'activity_type', 'topic', 'order_number',
@@ -19,12 +19,14 @@ class Report extends Model
         'usage_types', 'usage_other',
         'documents', 'details', 'suggestions',
         'status',
+        'revision_reason', 'revision_by', 'revision_at',
     ];
 
     protected $casts = [
         'usage_types' => 'array',          // แปลง JSON ↔ array อัตโนมัติ
         'start_date'  => 'date',
         'end_date'    => 'date',
+        'revision_at' => 'datetime',
     ];
 
     // ความสัมพันธ์: report เป็นของ user คนหนึ่ง
@@ -166,6 +168,7 @@ class Report extends Model
             'pending_signature' => 'รอลงนาม',
             'signed' => 'ลงนามแล้ว',
             'approved' => 'อนุมัติแล้ว',
+            'revision' => 'ส่งกลับแก้ไข',
             default => 'ไม่ทราบสถานะ',
         };
     }
@@ -178,7 +181,14 @@ class Report extends Model
             'pending_signature' => 'warning',
             'signed' => 'info',
             'approved' => 'success',
+            'revision' => 'danger',
             default => 'secondary',
         };
+    }
+
+    // ผู้บังคับบัญชาที่ตีกลับให้แก้ไข
+    public function revisionBy()
+    {
+        return $this->belongsTo(User::class, 'revision_by');
     }
 }

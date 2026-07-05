@@ -12,6 +12,32 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    {{-- แถบแจ้งถูกส่งกลับแก้ไข --}}
+    @if($report->status === 'revision')
+        <div class="alert alert-danger">
+            <div class="fw-bold mb-1">
+                <i class="bi bi-arrow-return-left"></i> รายงานถูกส่งกลับให้แก้ไข
+            </div>
+            <div class="mb-1">
+                <strong>เหตุผล:</strong> {{ $report->revision_reason }}
+            </div>
+            <div class="small">
+                โดย {{ $report->revisionBy->full_name ?? 'ผู้บังคับบัญชา' }}
+                — {{ optional($report->revision_at)->format('d/m/Y H:i') }}
+                @if($report->user_id === Auth::id())
+                    <br><i class="bi bi-info-circle"></i> กรุณากดปุ่ม "แก้ไข" ปรับปรุงรายงานตามเหตุผลข้างต้น แล้วลงนามใหม่อีกครั้ง
+                @endif
+            </div>
+        </div>
+    @endif
+
     <nav class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('reports.index') }}" class="link-gov">รายงานของฉัน</a></li>
@@ -24,7 +50,7 @@
         <div>
             <h3 class="mb-1" style="color: #EF6C00;">
                 <i class="bi bi-file-earmark-text-fill"></i>
-                รายงาน #{{ str_pad($report->id, 4, '0', STR_PAD_LEFT) }}
+                รายงาน {{ $report->doc_number ?? '#' . str_pad($report->id, 4, '0', STR_PAD_LEFT) }}
             </h3>
             <span class="badge bg-{{ $report->status_color }}">{{ $report->status_label }}</span>
             <small class="text-muted ms-2">สร้างเมื่อ {{ $report->created_at->format('d/m/Y H:i') }}</small>

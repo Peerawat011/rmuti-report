@@ -124,6 +124,48 @@ class SupervisorController extends Controller
             ->with('success', 'ลงนามอนุมัติเรียบร้อยแล้ว (ลำดับที่ ' . $role . ')');
     }
 
+    // ========== ตีกลับให้แก้ไข (พร้อมเหตุผล) ==========
+    public function reject(Request $request, Report $report)
+    {
+        $userId = Auth::id();
+        $role = $report->getSupervisorRoleFor($userId);
+
+        if (!$role) {
+            abort(403, 'คุณไม่มีสิทธิ์ดำเนินการกับรายงานนี้');
+        }
+
+        // ตีกลับได้เฉพาะตอนที่ถึงคิวตัวเองพิจารณา (เงื่อนไขเดียวกับการลงนาม)
+        if (!$report->canSign($userId)) {
+            return redirect()->route('reports.show', $report)
+                ->with('error', $report->whyCantSign($userId));
+        }
+
+        $request->validate([
+            'reject_reason' => 'required|string|max:1000',
+        ], [
+            'reject_reason.required' => 'กรุณาระบุเหตุผลที่ส่งกลับแก้ไข',
+            'reject_reason.max'      => 'เหตุผลต้องไม่เกิน 1,000 ตัวอักษร',
+        ]);
+
+        // ลบลายเซ็นทั้งหมด (เนื้อหาจะถูกแก้ — ลายเซ็นเดิมใช้ไม่ได้แล้ว ต้องลงนามใหม่)
+        foreach ($report->signatures as $signature) {
+            if ($signature->signature_image && Storage::disk('public')->exists($signature->signature_image)) {
+                Storage::disk('public')->delete($signature->signature_image);
+            }
+            $signature->delete();
+        }
+
+        $report->update([
+            'status'          => 'revision',
+            'revision_reason' => $request->reject_reason,
+            'revision_by'     => $userId,
+            'revision_at'     => now(),
+        ]);
+
+        return redirect()->route('supervisor.inbox')
+            ->with('success', 'ส่งรายงานกลับให้ผู้รายงานแก้ไขเรียบร้อยแล้ว');
+    }
+
     // ========== Helper: บันทึก base64 → file ==========
     private function saveDrawnSignature($base64Data, $reportId, $role)
     {
