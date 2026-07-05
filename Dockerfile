@@ -9,6 +9,9 @@ ENV COMPOSER_ALLOW_SUPERUSER 1
 # ติดตั้ง dependencies ตอน build — vendor ฝังใน image (บูต/ตื่นจาก sleep เร็ว)
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# ให้ php-fpm (ไม่ใช่ root) เขียน storage และ cache ได้ — ไม่งั้น Laravel boot ไม่ผ่าน (500 ทุกหน้า)
+RUN chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
+
 # Image config
 ENV WEBROOT /var/www/html/public
 ENV RUN_SCRIPTS 0
