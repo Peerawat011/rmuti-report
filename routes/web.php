@@ -14,6 +14,12 @@ use App\Http\Controllers\AnnouncementController;
     return redirect()->route('login');
     });
 
+    // ===== เสิร์ฟรูปสาธารณะ (avatar/ประกาศ) จาก database =====
+    // ไฟล์บนดิสก์หายเมื่อ Render restart — URL /storage/... เดิมจะตกมาที่ route นี้แล้วอ่านจาก TiDB แทน
+    Route::get('/storage/{path}', [\App\Http\Controllers\FileController::class, 'show'])
+        ->where('path', '.*')
+        ->name('files.show');
+
     // ===== Routes สำหรับคนที่ยังไม่ล็อกอิน =====
     Route::middleware('guest')->group(function () {
     // Login

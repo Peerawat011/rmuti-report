@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\AnnouncementImage;
+use App\Services\FileStore;
 use Illuminate\Http\Request;
 
 class AnnouncementController extends Controller
@@ -106,7 +107,9 @@ class AnnouncementController extends Controller
 
         foreach ($request->file('images') as $file) {
             $filename = 'ann_' . $announcement->id . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('announcements', $filename, 'public');
+            // เก็บลง database — ดิสก์บน Render เป็น ephemeral ไฟล์หายตอน restart
+            $path = 'announcements/' . $filename;
+            FileStore::put($path, file_get_contents($file->getRealPath()), $file->getMimeType());
 
             $announcement->images()->create([
                 'path'       => $path,

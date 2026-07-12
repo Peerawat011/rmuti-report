@@ -87,6 +87,7 @@ class SignatureController extends Controller
     {
         // แบบเก่า: ไฟล์ต่อรายงาน → ลบไฟล์ได้ / แบบใหม่: อ้างเวอร์ชันประจำตัว → ห้ามลบไฟล์ (ใช้ร่วมกับเอกสารอื่น)
         if ($signature->signature_image && !$signature->user_signature_id) {
+            \App\Services\FileStore::delete($signature->signature_image);
             foreach (['local', 'public'] as $disk) {
                 if (Storage::disk($disk)->exists($signature->signature_image)) {
                     Storage::disk($disk)->delete($signature->signature_image);

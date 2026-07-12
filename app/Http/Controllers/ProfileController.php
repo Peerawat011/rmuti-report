@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use App\Services\FileStore;
 
 class ProfileController extends Controller
 {
@@ -103,15 +104,19 @@ class ProfileController extends Controller
 
         $user = Auth::user();
 
-        // 2) ลบรูปเก่า (ถ้ามี)
-        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-            Storage::disk('public')->delete($user->avatar);
+        // 2) ลบรูปเก่า (ถ้ามี) — ทั้งใน database และไฟล์เก่าบนดิสก์
+        if ($user->avatar) {
+            FileStore::delete($user->avatar);
+            if (Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
         }
 
-        // 3) บันทึกรูปใหม่
+        // 3) บันทึกรูปใหม่ลง database (ดิสก์บน Render เป็น ephemeral — ไฟล์หายตอน restart)
         $file = $request->file('avatar');
         $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs('avatars', $filename, 'public');
+        $path = 'avatars/' . $filename;
+        FileStore::put($path, file_get_contents($file->getRealPath()), $file->getMimeType());
 
         // 4) อัปเดต database
         $user->update(['avatar' => $path]);
@@ -126,7 +131,8 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         if ($user->avatar) {
-            // ลบไฟล์จาก storage
+            // ลบไฟล์จาก database และไฟล์เก่าบนดิสก์ (ถ้ามี)
+            FileStore::delete($user->avatar);
             if (Storage::disk('public')->exists($user->avatar)) {
                 Storage::disk('public')->delete($user->avatar);
             }

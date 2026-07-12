@@ -7,7 +7,6 @@ use App\Models\UserSignature;
 use App\Services\SignatureImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class UserSignatureController extends Controller
 {
@@ -47,11 +46,12 @@ class UserSignatureController extends Controller
     {
         $sig = Auth::user()->activeSignature;
 
-        if (!$sig || !Storage::disk('local')->exists($sig->path)) {
+        $png = $sig ? SignatureImage::read($sig->path) : null;
+        if (!$png) {
             abort(404);
         }
 
-        return response(Storage::disk('local')->get($sig->path), 200, [
+        return response($png, 200, [
             'Content-Type'  => 'image/png',
             'Cache-Control' => 'private, no-store',
         ]);

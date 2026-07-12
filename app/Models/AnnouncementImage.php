@@ -24,12 +24,15 @@ class AnnouncementImage extends Model
         return asset('storage/' . $this->path);
     }
 
-    // ลบไฟล์จริงตอนลบ record
+    // ลบไฟล์จริงตอนลบ record (ทั้งใน database และไฟล์เก่าบนดิสก์)
     protected static function booted()
     {
         static::deleting(function (AnnouncementImage $image) {
-            if ($image->path && Storage::disk('public')->exists($image->path)) {
-                Storage::disk('public')->delete($image->path);
+            if ($image->path) {
+                \App\Services\FileStore::delete($image->path);
+                if (Storage::disk('public')->exists($image->path)) {
+                    Storage::disk('public')->delete($image->path);
+                }
             }
         });
     }

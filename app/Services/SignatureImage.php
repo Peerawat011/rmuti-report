@@ -50,7 +50,8 @@ class SignatureImage
         imagedestroy($dst);
 
         $path = 'signatures/users/' . $userId . '/sig_' . now()->format('YmdHis') . '_' . substr(md5($png), 0, 8) . '.png';
-        Storage::disk('local')->put($path, $png);
+        // เก็บลง database — ดิสก์บน Render เป็น ephemeral ไฟล์หายตอน restart
+        FileStore::put($path, $png, 'image/png');
 
         return $path;
     }
@@ -61,12 +62,11 @@ class SignatureImage
      */
     public static function render(Signature $signature): ?string
     {
-        $path = self::resolvePath($signature);
-        if (!$path) {
+        $binary = self::binary($signature);
+        if (!$binary) {
             return null;
         }
 
-        $binary = file_get_contents($path);
         $img = @imagecreatefromstring($binary);
         if ($img === false) {
             return null;
@@ -95,25 +95,41 @@ class SignatureImage
     }
 
     /**
-     * หา path จริงของไฟล์ลายเซ็น (รองรับทั้งระบบใหม่และไฟล์เก่า)
+     * ดึง binary ของรูปลายเซ็น (รองรับทั้งระบบใหม่และไฟล์เก่า)
+     * ลำดับ: database → ไฟล์บนดิสก์ (ข้อมูลเก่าบนเครื่อง dev)
      */
-    public static function resolvePath(Signature $signature): ?string
+    public static function binary(Signature $signature): ?string
     {
         // ระบบใหม่: อ้างอิงลายเซ็นประจำตัว
         if ($signature->user_signature_id && $signature->userSignature) {
-            $p = Storage::disk('local')->path($signature->userSignature->path);
-            if (is_file($p)) {
-                return $p;
+            $bin = self::read($signature->userSignature->path);
+            if ($bin !== null) {
+                return $bin;
             }
         }
 
-        // ไฟล์ต่อรายงาน (ข้อมูลเก่า) — ลอง private ก่อน แล้วค่อย public (เผื่อยังไม่ migrate)
+        // ไฟล์ต่อรายงาน (ข้อมูลเก่า)
         if ($signature->signature_image) {
-            foreach (['local', 'public'] as $disk) {
-                $p = Storage::disk($disk)->path($signature->signature_image);
-                if (is_file($p)) {
-                    return $p;
-                }
+            return self::read($signature->signature_image);
+        }
+
+        return null;
+    }
+
+    /**
+     * อ่านไฟล์ตาม path: database ก่อน แล้วค่อยดิสก์ (local → public เผื่อไฟล์เก่ายังไม่ migrate)
+     */
+    public static function read(string $path): ?string
+    {
+        $bin = FileStore::get($path);
+        if ($bin !== null) {
+            return $bin;
+        }
+
+        foreach (['local', 'public'] as $disk) {
+            $p = Storage::disk($disk)->path($path);
+            if (is_file($p)) {
+                return file_get_contents($p);
             }
         }
 

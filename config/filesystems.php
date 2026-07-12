@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // ปิด route storage/{path} ในตัวของ Laravel — มันดัก URL /storage/... แล้วตอบ 403
+            // เราเสิร์ฟรูปเองผ่าน FileController (อ่านจาก database เพราะดิสก์บน Render เป็น ephemeral)
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

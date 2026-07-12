@@ -150,6 +150,7 @@ class SupervisorController extends Controller
         // ลบไฟล์เฉพาะแบบเก่าที่เป็นไฟล์ต่อรายงาน — แบบอ้างเวอร์ชันประจำตัวห้ามลบไฟล์ (ใช้ร่วมกับเอกสารอื่น)
         foreach ($report->signatures as $signature) {
             if ($signature->signature_image && !$signature->user_signature_id) {
+                \App\Services\FileStore::delete($signature->signature_image);
                 foreach (['local', 'public'] as $disk) {
                     if (Storage::disk($disk)->exists($signature->signature_image)) {
                         Storage::disk($disk)->delete($signature->signature_image);
